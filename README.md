@@ -1,1 +1,1 @@
-# salon-management-server-
+# salon-management-system
