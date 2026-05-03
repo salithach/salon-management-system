@@ -6,11 +6,11 @@ import { Users, Scissors, BarChart3, UserCheck, ChevronRight, Plus, X } from "lu
 import { toast } from "sonner"
 import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
-    AreaChart, Area, PieChart, Pie, Cell
+    PieChart, Pie, Cell
 } from "recharts"
 import { useStaffAssignmentStore } from "@/store/staffAssignmentStore"
 import type { JobEntry, StaffAssignmentState } from "@/store/staffAssignmentStore"
-import DropDownComponent from "@/components/DropDownComponent"
+import DropDown from "@/components/DropDown"
 
 const allStaff = [
     { name: "Mia Chen",    role: "Senior Stylist",  status: "Available" },
@@ -248,7 +248,7 @@ export default function DashboardPage() {
                             {/* Service select */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Service</label>
-                                <DropDownComponent
+                                <DropDown
                                     multiple
                                     value={service}
                                     onChange={setService}

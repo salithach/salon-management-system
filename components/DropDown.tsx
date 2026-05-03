@@ -20,7 +20,7 @@ type Props = (SingleProps | MultiProps) & {
     placeholder?: string
 }
 
-export default function ServiceDropdown({ options, placeholder = "Select…", ...props }: Props) {
+export default function DropDown({ options, placeholder = "Select…", ...props }: Props) {
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
 

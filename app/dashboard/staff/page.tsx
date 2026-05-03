@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Scissors, Star, CheckCircle2, Circle, CalendarCheck, Loader2 } from "lucide-react"
 import { useStaffAssignmentStore } from "@/store/staffAssignmentStore"
 
@@ -19,17 +19,11 @@ const statusColor: Record<string, string> = {
 }
 
 export default function StaffPage() {
-    const { assignedToday, assign } = useStaffAssignmentStore()
+    const { assignedToday, assign, _hasHydrated } = useStaffAssignmentStore()
     const [selected, setSelected] = useState<string[]>([])
     const [saved, setSaved] = useState(false)
-    const [mounted, setMounted] = useState(false)
 
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
-
-    if (!mounted) {
+    if (!_hasHydrated) {
         return (
             <div className="flex items-center justify-center h-48 text-gray-400 gap-2">
                 <Loader2 size={18} className="animate-spin" /> Loading staff…
