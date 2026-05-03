@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 
+const API_BASE = process.env.API_BASE_URL
+
 export async function POST(req: NextRequest) {
+    if (!API_BASE) {
+        return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
+    }
     try {
         const body = await req.json()
 
-        const res = await fetch("http://localhost:7800/api/v1/auth/login", {
+        const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),

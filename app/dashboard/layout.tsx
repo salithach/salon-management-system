@@ -49,8 +49,8 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                             onClick={onClose}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
                                 isActive
-                                    ? "bg-white text-black font-medium"
-                                    : "text-white/60 hover:text-white hover:bg-white/10"
+                                    ? "bg-white text-gray-900 font-semibold"
+                                    : "text-white/80 hover:text-white hover:bg-white/10"
                             }`}
                         >
                             <Icon size={16} />
@@ -70,13 +70,13 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                     </div>
                     <div>
                         <p className="text-sm font-medium leading-none text-white">My Account</p>
-                        <p className="text-xs text-white/60 mt-0.5">{user?.roles?.[0] ?? "User"}</p>
+                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0] ?? "User"}</p>
                     </div>
                     <ChevronRight size={14} className="ml-auto text-white/40 group-hover:text-white transition" />
                 </Link>
                 <button
                     onClick={onLogout}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 transition"
                 >
                     <LogOut size={15} /> Logout
                 </button>
@@ -110,14 +110,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    className="fixed inset-0 z-40 bg-zinc-900/60 md:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Mobile drawer */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-black text-white transform transition-transform duration-300 md:hidden ${
+                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-zinc-900 text-white transform transition-transform duration-300 md:hidden ${
                     sidebarOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
@@ -141,7 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Desktop sidebar */}
-            <aside className="hidden md:flex flex-col w-60 bg-black text-white shrink-0 h-screen sticky top-0">
+            <aside className="hidden md:flex flex-col w-60 bg-zinc-900 text-white shrink-0 h-screen sticky top-0">
                 <div className="h-16 flex items-center px-6 border-b border-white/10">
                     <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
                         SalonHQ
