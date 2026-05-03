@@ -1,3 +1,5 @@
+import { Scissors, Star } from "lucide-react"
+
 const staff = [
     { name: "Mia Chen", role: "Senior Stylist", speciality: "Hair Coloring, Highlights", appointments: 18, rating: "4.9", status: "Available" },
     { name: "Lena Park", role: "Stylist", speciality: "Haircuts, Threading", appointments: 14, rating: "4.8", status: "Available" },
@@ -48,10 +50,10 @@ export default function StaffPage() {
                                 {member.status}
                             </span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-3">✂️ {member.speciality}</p>
+                        <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5"><Scissors size={12} /> {member.speciality}</p>
                         <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-50 pt-3">
                             <span>{member.appointments} appts this month</span>
-                            <span className="font-medium text-gray-900">★ {member.rating}</span>
+                            <span className="font-medium text-gray-900 flex items-center gap-0.5"><Star size={11} className="text-gray-600" /> {member.rating}</span>
                         </div>
                         <div className="mt-4 flex gap-2">
                             <button className="flex-1 text-xs border border-gray-200 rounded-lg py-1.5 hover:border-black hover:text-black transition">

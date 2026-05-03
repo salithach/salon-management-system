@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Users, Scissors, BarChart3 } from "lucide-react"
 
 const stats = [
     { label: "Today's Appointments", value: "12", change: "+3 from yesterday" },
@@ -77,18 +78,18 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                    { title: "Add Client", desc: "Register a new client profile", icon: "👤", href: "/dashboard/clients" },
-                    { title: "Manage Services", desc: "Update pricing & service list", icon: "✂️", href: "/dashboard/services" },
-                    { title: "View Reports", desc: "Monthly revenue & insights", icon: "📊", href: "/dashboard/reports" },
-                ].map((action) => (
+                    { title: "Add Client", desc: "Register a new client profile", icon: Users, href: "/dashboard/clients" },
+                    { title: "Manage Services", desc: "Update pricing & service list", icon: Scissors, href: "/dashboard/services" },
+                    { title: "View Reports", desc: "Monthly revenue & insights", icon: BarChart3, href: "/dashboard/reports" },
+                ].map(({ title, desc, icon: Icon, href }) => (
                     <Link
-                        key={action.title}
-                        href={action.href}
-                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-left hover:border-black hover:shadow-md transition group"
+                        key={title}
+                        href={href}
+                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-left hover:border-brand hover:shadow-md transition group"
                     >
-                        <span className="text-2xl mb-3 block">{action.icon}</span>
-                        <p className="text-sm font-semibold text-gray-900 group-hover:text-black">{action.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{action.desc}</p>
+                        <Icon size={24} className="mb-3 text-gray-500 group-hover:text-brand transition" />
+                        <p className="text-sm font-semibold text-gray-900">{title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
                     </Link>
                 ))}
             </div>
