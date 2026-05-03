@@ -1,3 +1,18 @@
+"use client"
+
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
+} from "recharts";
+
 const monthlyRevenue = [
     { month: "Nov", revenue: 4800, appointments: 68 },
     { month: "Dec", revenue: 5200, appointments: 74 },
@@ -14,6 +29,27 @@ const topServices = [
     { name: "Haircut & Blowout", revenue: "$1,040", share: 16 },
     { name: "Full Highlights", revenue: "$840", share: 13 },
     { name: "Others", revenue: "$1,260", share: 20 },
+]
+
+const weeklyRevenue = [
+    { day: "Mon", revenue: 820 },
+    { day: "Tue", revenue: 1240 },
+    { day: "Wed", revenue: 960 },
+    { day: "Thu", revenue: 1580 },
+    { day: "Fri", revenue: 2100 },
+    { day: "Sat", revenue: 2840 },
+    { day: "Sun", revenue: 580 },
+]
+
+const serviceBreakdown = [
+    { name: "Hair",   value: 48, color: "#27272a" },
+    { name: "Nails",  value: 32, color: "#52525b" },
+    { name: "Beauty", value: 20, color: "#a1a1aa" },
+]
+
+const appointmentStatus = [
+    { name: "Confirmed", value: 8, color: "#27272a" },
+    { name: "Pending",   value: 4, color: "#d4d4d8" },
 ]
 
 const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.revenue))
@@ -79,6 +115,100 @@ export default function ReportsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Analytics Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                {/* Weekly Revenue — Area chart (spans 2 cols) */}
+                <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Weekly Revenue</h3>
+                            <p className="text-xs text-gray-400 mt-0.5">This week&apos;s daily earnings</p>
+                        </div>
+                        <span className="text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">+12% vs last week</span>
+                    </div>
+                    <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={weeklyRevenue}>
+                            <defs>
+                                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#27272a" stopOpacity={0.15} />
+                                    <stop offset="95%" stopColor="#27272a" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                            <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40}
+                                   tickFormatter={(v) => `$${v}`} />
+                            <Tooltip
+                                contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
+                                formatter={(v) => [`$${Number(v).toLocaleString()}`, "Revenue"]}
+                            />
+                            <Area type="monotone" dataKey="revenue" stroke="#27272a" strokeWidth={2}
+                                  fill="url(#revenueGrad)" dot={{ fill: "#27272a", r: 3 }} activeDot={{ r: 5 }} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+
+                {/* Right column: 2 small donuts */}
+                <div className="flex flex-col gap-4">
+                    {/* Service category donut (static) */}
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1">Services Mix</h3>
+                        <p className="text-xs text-gray-400 mb-3">Appointments by category</p>
+                        <div className="flex items-center gap-4">
+                            <ResponsiveContainer width={100} height={100}>
+                                <PieChart>
+                                    <Pie data={serviceBreakdown} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
+                                         dataKey="value" strokeWidth={2}>
+                                        {serviceBreakdown.map((entry) => (
+                                            <Cell key={entry.name} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                                             formatter={(v) => [`${v}%`, ""]} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="flex flex-col gap-1.5">
+                                {serviceBreakdown.map((s) => (
+                                    <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
+                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                                        {s.name} <span className="ml-auto text-gray-400 font-medium">{s.value}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Appointment status donut */}
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-1">Appointment Status</h3>
+                        <p className="text-xs text-gray-400 mb-3">Today&apos;s confirmation rate</p>
+                        <div className="flex items-center gap-4">
+                            <ResponsiveContainer width={100} height={100}>
+                                <PieChart>
+                                    <Pie data={appointmentStatus} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
+                                         dataKey="value" strokeWidth={2}>
+                                        {appointmentStatus.map((entry) => (
+                                            <Cell key={entry.name} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="flex flex-col gap-1.5">
+                                {appointmentStatus.map((s) => (
+                                    <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
+                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                                        {s.name} <span className="ml-auto font-medium text-gray-800">{s.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             {/* Monthly breakdown table */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
