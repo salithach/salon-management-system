@@ -40,7 +40,7 @@ export default function Navbar() {
                 <div className="w-full flex items-center justify-between h-16 px-6 lg:px-4">
 
                 {/* Logo */}
-                <Link href="/" className="text-white text-xl font-semibold tracking-tight hover:opacity-80 transition">
+                <Link href={isLoggedIn ? "/dashboard" : "/"} className="text-white text-xl font-semibold tracking-tight hover:opacity-80 transition">
                     SalonHQ
                 </Link>
 

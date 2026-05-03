@@ -122,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }`}
             >
                 <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
-                    <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
+                    <Link href="/dashboard" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
                         SalonHQ
                     </Link>
                     <button
@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Desktop sidebar */}
             <aside className="hidden md:flex flex-col w-60 bg-zinc-900 text-white shrink-0 h-screen sticky top-0">
                 <div className="h-16 flex items-center px-6 border-b border-white/10">
-                    <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
+                    <Link href="/dashboard" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
                         SalonHQ
                     </Link>
                 </div>
