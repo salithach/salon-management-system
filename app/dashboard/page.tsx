@@ -128,40 +128,45 @@ export default function DashboardPage() {
                             const jobs = getJobs(member.name)
                             const income = getIncome(member.name)
                             return (
-                                <div key={member.name} className="px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
-                                    {/* Top row: avatar + name + status badge */}
+                                <div key={member.name} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                                    {/* Top row: avatar + name + role + status badge (mobile) */}
                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-9 h-9 rounded-full bg-zinc-800 text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-zinc-800 text-white flex items-center justify-center text-sm font-semibold shrink-0">
                                             {member.name[0]}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                                            <p className="text-xs text-gray-400">{member.role}</p>
+                                            <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                                            <p className="text-xs text-gray-400 truncate">{member.role}</p>
                                         </div>
-                                        {/* Status visible on mobile next to name */}
+                                        {/* Status badge — visible on mobile next to name */}
                                         <span className={`sm:hidden inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
                                             {member.status}
                                         </span>
                                     </div>
-                                    {/* Stats + actions row */}
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="text-center min-w-[32px]">
-                                            <p className="text-sm font-semibold text-gray-900">{jobs.length}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
+
+                                    {/* Bottom row (mobile) / right side (desktop): stats + button */}
+                                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                                        {/* Stats */}
+                                        <div className="flex items-center gap-3 sm:gap-4 flex-1 sm:flex-none">
+                                            <div className="text-center min-w-[36px]">
+                                                <p className="text-sm font-semibold text-gray-900">{jobs.length}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
+                                            </div>
+                                            <div className="w-px h-6 bg-gray-100 shrink-0" />
+                                            <div className="text-center min-w-[44px]">
+                                                <p className="text-sm font-semibold text-gray-900">${income.toFixed(0)}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
+                                            </div>
+                                            {/* Status separator + badge — desktop only */}
+                                            <div className="w-px h-6 bg-gray-100 shrink-0 hidden sm:block" />
+                                            <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                                {member.status}
+                                            </span>
                                         </div>
-                                        <div className="w-px h-6 bg-gray-100" />
-                                        <div className="text-center min-w-[40px]">
-                                            <p className="text-sm font-semibold text-gray-900">${income.toFixed(0)}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
-                                        </div>
-                                        <div className="w-px h-6 bg-gray-100" />
-                                        {/* Status hidden on mobile (shown above) */}
-                                        <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                            {member.status}
-                                        </span>
+                                        {/* Add Job button — pushed to the right on both mobile & desktop */}
                                         <button
                                             onClick={() => openModal(member.name)}
-                                            className="flex items-center gap-1 text-xs bg-zinc-800 text-white px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition whitespace-nowrap"
+                                            className="ml-auto sm:ml-0 flex items-center gap-1 text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-95 transition whitespace-nowrap shrink-0"
                                         >
                                             <Plus size={12} /> Add Job
                                         </button>
@@ -169,23 +174,26 @@ export default function DashboardPage() {
                                 </div>
                             )
                         })}
+
                         {/* Totals row */}
-                        <div className="flex items-center justify-end gap-4 px-6 py-3 bg-gray-50">
-                            <p className="text-xs text-gray-500 mr-auto font-medium">Today&apos;s totals</p>
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-gray-900">
-                                    {todayStaff.reduce((s, m) => s + getJobs(m.name).length, 0)}
-                                </p>
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
-                            </div>
-                            <div className="w-px h-6 bg-gray-200" />
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-gray-900">
-                                    {"$"}{todayStaff.reduce((s, m) => s + getIncome(m.name), 0).toFixed(0)}
-                                </p>
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 sm:px-6 py-3 bg-gray-50">
+                            <p className="text-xs text-gray-500 font-medium mr-auto">Today&apos;s totals</p>
+                            <div className="flex items-center gap-4">
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {todayStaff.reduce((s, m) => s + getJobs(m.name).length, 0)}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
+                                </div>
+                                <div className="w-px h-6 bg-gray-200 shrink-0" />
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {"$"}{todayStaff.reduce((s, m) => s + getIncome(m.name), 0).toFixed(0)}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
                                 </div>
                             </div>
+                        </div>
 
                         {/* Charts */}
                         {(() => {
@@ -197,7 +205,7 @@ export default function DashboardPage() {
                             return (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border-t border-gray-100">
                                     {/* Jobs chart */}
-                                    <div className="px-6 py-5 border-r border-gray-100">
+                                    <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-gray-100">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Jobs per Member</p>
                                         <ResponsiveContainer width="100%" height={160}>
                                             <BarChart data={chartData} barSize={28}>
@@ -213,7 +221,7 @@ export default function DashboardPage() {
                                         </ResponsiveContainer>
                                     </div>
                                     {/* Revenue chart */}
-                                    <div className="px-6 py-5">
+                                    <div className="px-4 sm:px-6 py-5">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Revenue per Member</p>
                                         <ResponsiveContainer width="100%" height={160}>
                                             <BarChart data={chartData} barSize={28}>
