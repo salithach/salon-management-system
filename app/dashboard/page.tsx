@@ -108,7 +108,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div className="flex items-center gap-2">
                         <UserCheck size={16} className="text-gray-500" />
-                        <h2 className="text-sm font-semibold text-gray-900">Today&apos;s Staff</h2>
+                        <h2 className="text-sm font-semibold text-gray-900">Staff For Today</h2>
                     </div>
                     <Link href="/dashboard/staff" className="text-xs text-gray-500 hover:text-brand transition flex items-center gap-1">
                         Manage <ChevronRight size={12} />
