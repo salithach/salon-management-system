@@ -1,3 +1,5 @@
+import { Clock, BookOpen } from "lucide-react"
+
 const services = [
     { name: "Haircut & Blowout", category: "Hair", duration: "60 min", price: "$65", bookings: 48 },
     { name: "Hair Coloring", category: "Hair", duration: "120 min", price: "$140", bookings: 35 },
@@ -61,8 +63,8 @@ export default function ServicesPage() {
                             <p className="text-lg font-bold text-gray-900">{svc.price}</p>
                         </div>
                         <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>⏱ {svc.duration}</span>
-                            <span>{svc.bookings} bookings</span>
+                            <span className="flex items-center gap-1"><Clock size={12} /> {svc.duration}</span>
+                            <span className="flex items-center gap-1"><BookOpen size={12} /> {svc.bookings} bookings</span>
                         </div>
                         <div className="mt-4 flex gap-2">
                             <button className="flex-1 text-xs border border-gray-200 rounded-lg py-1.5 hover:border-black hover:text-black transition">

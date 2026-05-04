@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/store/authStore"
+import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
     const [username, setUsername] = useState("salithach")
@@ -85,9 +86,20 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-black text-white py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-white transition font-medium disabled:cursor-not-allowed ${
+                                loading
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : "bg-black hover:opacity-90"
+                            }`}
                         >
-                            {loading ? "Signing in…" : "Sign In"}
+                            {loading ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Signing in…
+                                </>
+                            ) : (
+                                "Sign In"
+                            )}
                         </button>
                     </form>
 

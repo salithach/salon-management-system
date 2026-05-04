@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAuthStore } from "@/store/authStore"
+import { Store, User, Lock, Trash2, CheckCircle2, MapPin, Globe, AtSign, Save } from "lucide-react"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
@@ -85,9 +86,12 @@ export default function ProfilePage() {
 
             {/* Salon Details */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-sm font-semibold text-gray-900">Salon Details</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Your salon&apos;s public identity and location</p>
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <Store size={16} className="text-gray-500 shrink-0" />
+                    <div>
+                        <h2 className="text-sm font-semibold text-gray-900">Salon Details</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">Your salon&apos;s public identity and location</p>
+                    </div>
                 </div>
                 <form onSubmit={handleSalonSave} className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -103,7 +107,7 @@ export default function ProfilePage() {
                         <div>
                             <label className={labelCls}>Username</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">@</span>
+                                <AtSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     type="text"
                                     value={salonForm.username}
@@ -114,18 +118,23 @@ export default function ProfilePage() {
                         </div>
                         <div>
                             <label className={labelCls}>Website</label>
-                            <input
-                                type="url"
-                                value={salonForm.website}
-                                onChange={(e) => setSalonForm({ ...salonForm, website: e.target.value })}
-                                className={inputCls}
-                            />
+                            <div className="relative">
+                                <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="url"
+                                    value={salonForm.website}
+                                    onChange={(e) => setSalonForm({ ...salonForm, website: e.target.value })}
+                                    className={`${inputCls} pl-7`}
+                                />
+                            </div>
                         </div>
                     </div>
 
                     <div className="h-px bg-gray-100" />
 
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Address</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <MapPin size={12} /> Address
+                    </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="sm:col-span-2">
                             <label className={labelCls}>Street Address</label>
@@ -175,9 +184,9 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
-                        {savedSalon && <p className="text-xs text-green-600 font-medium">✓ Salon details saved</p>}
-                        <button type="submit" className="ml-auto bg-black text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition">
-                            Save Salon Details
+                        {savedSalon && <p className="text-xs text-green-600 font-medium flex items-center gap-1"><CheckCircle2 size={13} /> Salon details saved</p>}
+                        <button type="submit" className="ml-auto bg-brand text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition flex items-center gap-2">
+                            <Save size={14} /> Save Salon Details
                         </button>
                     </div>
                 </form>
@@ -185,9 +194,12 @@ export default function ProfilePage() {
 
             {/* Personal Information */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-sm font-semibold text-gray-900">Owner Information</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Update the salon owner&apos;s name, email and contact details</p>
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <User size={16} className="text-gray-500 shrink-0" />
+                    <div>
+                        <h2 className="text-sm font-semibold text-gray-900">Owner Details</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">Update the salon owner&apos;s name, email and contact details</p>
+                    </div>
                 </div>
                 <form onSubmit={handlePersonalSave} className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -229,9 +241,9 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div className="flex items-center justify-between pt-2">
-                        {savedPersonal && <p className="text-xs text-green-600 font-medium">✓ Personal info saved</p>}
-                        <button type="submit" className="ml-auto bg-black text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition">
-                            Save Changes
+                        {savedPersonal && <p className="text-xs text-green-600 font-medium flex items-center gap-1"><CheckCircle2 size={13} /> Owner details saved</p>}
+                        <button type="submit" className="ml-auto bg-brand text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition flex items-center gap-2">
+                            <Save size={14} /> Save Owner Details
                         </button>
                     </div>
                 </form>
@@ -239,9 +251,12 @@ export default function ProfilePage() {
 
             {/* Change Password */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-sm font-semibold text-gray-900">Change Password</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Choose a strong password to keep your account secure</p>
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                    <Lock size={16} className="text-gray-500 shrink-0" />
+                    <div>
+                        <h2 className="text-sm font-semibold text-gray-900">Change Password</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">Choose a strong password to keep your account secure</p>
+                    </div>
                 </div>
                 <form onSubmit={handlePasswordSave} className="p-6 space-y-4">
                     <div>
@@ -278,9 +293,9 @@ export default function ProfilePage() {
                     </div>
                     {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
                     <div className="flex items-center justify-between pt-2">
-                        {savedPassword && <p className="text-xs text-green-600 font-medium">✓ Password updated</p>}
-                        <button type="submit" className="ml-auto bg-black text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition">
-                            Update Password
+                        {savedPassword && <p className="text-xs text-green-600 font-medium flex items-center gap-1"><CheckCircle2 size={13} /> Password updated</p>}
+                        <button type="submit" className="ml-auto bg-brand text-white text-sm px-5 py-2.5 rounded-lg hover:opacity-80 transition flex items-center gap-2">
+                            <Save size={14} /> Update Password
                         </button>
                     </div>
                 </form>
@@ -288,7 +303,8 @@ export default function ProfilePage() {
 
             {/* Danger Zone */}
             <div className="bg-white rounded-xl border border-red-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-red-100">
+                <div className="px-6 py-4 border-b border-red-100 flex items-center gap-2">
+                    <Trash2 size={16} className="text-red-500 shrink-0" />
                     <h2 className="text-sm font-semibold text-red-600">Danger Zone</h2>
                 </div>
                 <div className="p-6 flex items-center justify-between">
@@ -296,8 +312,8 @@ export default function ProfilePage() {
                         <p className="text-sm font-medium text-gray-900">Delete account</p>
                         <p className="text-xs text-gray-400 mt-0.5">Permanently remove your account and all data</p>
                     </div>
-                    <button className="text-sm border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition">
-                        Delete Account
+                    <button className="text-sm border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2">
+                        <Trash2 size={14} /> Delete Account
                     </button>
                 </div>
             </div>

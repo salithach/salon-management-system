@@ -4,14 +4,18 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore } from "@/store/authStore"
+import {
+    LayoutDashboard, CalendarDays, Users, Scissors,
+    UserCheck, BarChart3, LogOut, ChevronRight, Menu, X
+} from "lucide-react"
 
 const navItems = [
-    { label: "Dashboard", href: "/dashboard", icon: "▤" },
-    { label: "Appointments", href: "/dashboard/appointments", icon: "📅" },
-    { label: "Clients", href: "/dashboard/clients", icon: "👤" },
-    { label: "Services", href: "/dashboard/services", icon: "✂️" },
-    { label: "Staff", href: "/dashboard/staff", icon: "👥" },
-    { label: "Reports", href: "/dashboard/reports", icon: "📊" },
+    { label: "Dashboard",    href: "/dashboard",              icon: LayoutDashboard },
+    { label: "Appointments", href: "/dashboard/appointments", icon: CalendarDays },
+    { label: "Clients",      href: "/dashboard/clients",      icon: Users },
+    { label: "Services",     href: "/dashboard/services",     icon: Scissors },
+    { label: "Staff",        href: "/dashboard/staff",        icon: UserCheck },
+    { label: "Reports",      href: "/dashboard/reports",      icon: BarChart3 },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -37,6 +41,7 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
             <nav className="flex flex-col gap-1 px-3 py-5 flex-1 overflow-y-auto min-h-0">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href
+                    const Icon = item.icon
                     return (
                         <Link
                             key={item.href}
@@ -44,11 +49,11 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                             onClick={onClose}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
                                 isActive
-                                    ? "bg-white text-black font-medium"
-                                    : "text-white/60 hover:text-white hover:bg-white/10"
+                                    ? "bg-white text-gray-900 font-semibold"
+                                    : "text-white/80 hover:text-white hover:bg-white/10"
                             }`}
                         >
-                            <span className="text-base">{item.icon}</span>
+                            <Icon size={16} />
                             {item.label}
                         </Link>
                     )
@@ -65,15 +70,15 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                     </div>
                     <div>
                         <p className="text-sm font-medium leading-none text-white">My Account</p>
-                        <p className="text-xs text-white/60 mt-0.5">{user?.roles?.[0] ?? "User"}</p>
+                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0] ?? "User"}</p>
                     </div>
-                    <span className="ml-auto text-white/40 group-hover:text-white transition text-xs">→</span>
+                    <ChevronRight size={14} className="ml-auto text-white/40 group-hover:text-white transition" />
                 </Link>
                 <button
                     onClick={onLogout}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 transition"
                 >
-                    <span>→</span> Logout
+                    <LogOut size={15} /> Logout
                 </button>
             </div>
         </>
@@ -105,26 +110,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                    className="fixed inset-0 z-40 bg-zinc-900/60 md:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* Mobile drawer */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-black text-white transform transition-transform duration-300 md:hidden ${
+                className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-zinc-900 text-white transform transition-transform duration-300 md:hidden ${
                     sidebarOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
             >
                 <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
-                    <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
+                    <Link href="/dashboard" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
                         SalonHQ
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="text-white/60 hover:text-white transition text-xl leading-none"
+                        className="text-white/60 hover:text-white transition"
                     >
-                        ✕
+                        <X size={20} />
                     </button>
                 </div>
                 <SidebarContent
@@ -136,9 +141,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Desktop sidebar */}
-            <aside className="hidden md:flex flex-col w-60 bg-black text-white shrink-0 h-screen sticky top-0">
+            <aside className="hidden md:flex flex-col w-60 bg-zinc-900 text-white shrink-0 h-screen sticky top-0">
                 <div className="h-16 flex items-center px-6 border-b border-white/10">
-                    <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
+                    <Link href="/dashboard" className="text-xl font-semibold tracking-tight hover:opacity-80 transition">
                         SalonHQ
                     </Link>
                 </div>
@@ -158,12 +163,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="md:hidden flex flex-col gap-[5px] p-1"
+                            className="md:hidden p-1 text-gray-800"
                             aria-label="Open menu"
                         >
-                            <span className="w-5 h-[2px] bg-gray-800 block" />
-                            <span className="w-5 h-[2px] bg-gray-800 block" />
-                            <span className="w-5 h-[2px] bg-gray-800 block" />
+                            <Menu size={22} />
                         </button>
                         <h1 className="text-lg font-semibold text-gray-900">{pageTitle}</h1>
                     </div>
