@@ -123,60 +123,58 @@ export default function DashboardPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-50">
-                        {todayStaff.map((member) => {
-                            const jobs = getJobs(member.name)
-                            const income = getIncome(member.name)
-                            return (
-                                <div key={member.name} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                                    {/* Top row: avatar + name + role + status badge (mobile) */}
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-10 h-10 rounded-full bg-zinc-800 text-white flex items-center justify-center text-sm font-semibold shrink-0">
-                                            {member.name[0]}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
-                                            <p className="text-xs text-gray-400 truncate">{member.role}</p>
-                                        </div>
-                                        {/* Status badge — visible on mobile next to name */}
-                                        <span className={`sm:hidden inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                            {member.status}
-                                        </span>
-                                    </div>
-
-                                    {/* Bottom row (mobile) / right side (desktop): stats + button */}
-                                    <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                                        {/* Stats */}
-                                        <div className="flex items-center gap-3 sm:gap-4 flex-1 sm:flex-none">
-                                            <div className="text-center min-w-[36px]">
-                                                <p className="text-sm font-semibold text-gray-900">{jobs.length}</p>
-                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
+                    <div className="p-4 sm:p-6 space-y-5">
+                        {/* Staff cards grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {todayStaff.map((member) => {
+                                const jobs = getJobs(member.name)
+                                const income = getIncome(member.name)
+                                return (
+                                    <div
+                                        key={member.name}
+                                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-gray-300 hover:shadow-md transition"
+                                    >
+                                        {/* Header: avatar + name + status */}
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-11 h-11 rounded-full bg-zinc-800 text-white flex items-center justify-center text-base font-semibold shrink-0">
+                                                {member.name[0]}
                                             </div>
-                                            <div className="w-px h-6 bg-gray-100 shrink-0" />
-                                            <div className="text-center min-w-[44px]">
-                                                <p className="text-sm font-semibold text-gray-900">${income.toFixed(0)}</p>
-                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-gray-900 truncate">{member.name}</p>
+                                                <p className="text-xs text-gray-400 truncate">{member.role}</p>
                                             </div>
-                                            {/* Status separator + badge — desktop only */}
-                                            <div className="w-px h-6 bg-gray-100 shrink-0 hidden sm:block" />
-                                            <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
                                                 {member.status}
                                             </span>
                                         </div>
-                                        {/* Add Job button — pushed to the right on both mobile & desktop */}
+
+                                        {/* Stats row */}
+                                        <div className="flex items-center gap-4 border-t border-gray-50 pt-3 pb-4">
+                                            <div className="text-center flex-1">
+                                                <p className="text-lg font-bold text-gray-900">{jobs.length}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
+                                            </div>
+                                            <div className="w-px h-8 bg-gray-100 shrink-0" />
+                                            <div className="text-center flex-1">
+                                                <p className="text-lg font-bold text-gray-900">${income.toFixed(0)}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Add Job button */}
                                         <button
                                             onClick={() => openModal(member.name)}
-                                            className="ml-auto sm:ml-0 flex items-center gap-1 text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-95 transition whitespace-nowrap shrink-0"
+                                            className="w-full flex items-center justify-center gap-1.5 text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-95 transition"
                                         >
                                             <Plus size={12} /> Add Job
                                         </button>
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
 
                         {/* Totals row */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 sm:px-6 py-3 bg-gray-50">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 bg-gray-50 rounded-xl">
                             <p className="text-xs text-gray-500 font-medium mr-auto">Today&apos;s totals</p>
                             <div className="flex items-center gap-4">
                                 <div className="text-center">
@@ -203,9 +201,9 @@ export default function DashboardPage() {
                                 Revenue: getIncome(m.name),
                             }))
                             return (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border-t border-gray-100">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {/* Jobs chart */}
-                                    <div className="px-4 sm:px-6 py-5 border-b sm:border-b-0 sm:border-r border-gray-100">
+                                    <div className="bg-gray-50 rounded-xl px-4 py-5">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Jobs per Member</p>
                                         <ResponsiveContainer width="100%" height={160}>
                                             <BarChart data={chartData} barSize={28}>
@@ -214,14 +212,14 @@ export default function DashboardPage() {
                                                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={24} />
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
-                                                    cursor={{ fill: "#f9fafb" }}
+                                                    cursor={{ fill: "#f3f4f6" }}
                                                 />
                                                 <Bar dataKey="Jobs" fill="#27272a" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
                                     {/* Revenue chart */}
-                                    <div className="px-4 sm:px-6 py-5">
+                                    <div className="bg-gray-50 rounded-xl px-4 py-5">
                                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Revenue per Member</p>
                                         <ResponsiveContainer width="100%" height={160}>
                                             <BarChart data={chartData} barSize={28}>
@@ -231,7 +229,7 @@ export default function DashboardPage() {
                                                     tickFormatter={(v) => `$${v}`} />
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
-                                                    cursor={{ fill: "#f9fafb" }}
+                                                    cursor={{ fill: "#f3f4f6" }}
                                                     formatter={(v) => [`$${Number(v).toFixed(2)}`, "Revenue"]}
                                                 />
                                                 <Bar dataKey="Revenue" fill="#3f3f46" radius={[4, 4, 0, 0]} />
@@ -241,8 +239,8 @@ export default function DashboardPage() {
                                 </div>
                             )
                         })()}
-                        </div>
-                    )}
+                    </div>
+                )}
             </div>
 
             {/* Add Job Modal */}
