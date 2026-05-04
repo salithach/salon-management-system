@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Scissors, Star, CheckCircle2, Circle, CalendarCheck, Loader2 } from "lucide-react"
-import { useStaffAssignmentStore } from "@/store/staffAssignmentStore"
+import { useStaffAssignmentStore } from "@/store/staffStore"
 
 const staff = [
     { name: "Mia Chen", role: "Senior Stylist", speciality: "Hair Coloring, Highlights", appointments: 18, rating: "4.9", status: "Available" },

@@ -8,8 +8,7 @@ import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
     PieChart, Pie, Cell
 } from "recharts"
-import { useStaffAssignmentStore } from "@/store/staffAssignmentStore"
-import type { JobEntry, StaffAssignmentState } from "@/store/staffAssignmentStore"
+import { JobEntry, StaffAssignmentState, useStaffAssignmentStore } from "@/store/staffStore"
 import DropDown from "@/components/DropDown"
 
 const allStaff = [
@@ -129,31 +128,40 @@ export default function DashboardPage() {
                             const jobs = getJobs(member.name)
                             const income = getIncome(member.name)
                             return (
-                                <div key={member.name} className="flex items-center gap-4 px-6 py-3.5">
-                                    <div className="w-9 h-9 rounded-full bg-zinc-800 text-white flex items-center justify-center text-sm font-semibold shrink-0">
-                                        {member.name[0]}
+                                <div key={member.name} className="px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-3">
+                                    {/* Top row: avatar + name + status badge */}
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div className="w-9 h-9 rounded-full bg-zinc-800 text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                                            {member.name[0]}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                                            <p className="text-xs text-gray-400">{member.role}</p>
+                                        </div>
+                                        {/* Status visible on mobile next to name */}
+                                        <span className={`sm:hidden inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                            {member.status}
+                                        </span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                                        <p className="text-xs text-gray-400">{member.role}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-center">
+                                    {/* Stats + actions row */}
+                                    <div className="flex items-center gap-3 sm:gap-4">
+                                        <div className="text-center min-w-[32px]">
                                             <p className="text-sm font-semibold text-gray-900">{jobs.length}</p>
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
                                         </div>
                                         <div className="w-px h-6 bg-gray-100" />
-                                        <div className="text-center">
-                                            <p className="text-sm font-semibold text-gray-900">{"$"}{income.toFixed(0)}</p>
+                                        <div className="text-center min-w-[40px]">
+                                            <p className="text-sm font-semibold text-gray-900">${income.toFixed(0)}</p>
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
                                         </div>
                                         <div className="w-px h-6 bg-gray-100" />
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                        {/* Status hidden on mobile (shown above) */}
+                                        <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
                                             {member.status}
                                         </span>
                                         <button
                                             onClick={() => openModal(member.name)}
-                                            className="flex items-center gap-1 text-xs bg-zinc-800 text-white px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition"
+                                            className="flex items-center gap-1 text-xs bg-zinc-800 text-white px-3 py-1.5 rounded-lg hover:bg-zinc-700 transition whitespace-nowrap"
                                         >
                                             <Plus size={12} /> Add Job
                                         </button>
