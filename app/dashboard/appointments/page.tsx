@@ -37,7 +37,7 @@ export default function AppointmentsPage() {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 className="text-sm font-semibold text-gray-900">All Appointments</h2>
-                    <button className="bg-black text-white text-xs px-3 py-1.5 rounded-lg hover:opacity-80 transition">
+                    <button className="bg-black text-white text-xs px-3 py-2 rounded-lg hover:opacity-80 transition">
                         + New
                     </button>
                 </div>

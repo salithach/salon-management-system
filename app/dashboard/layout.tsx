@@ -159,19 +159,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex flex-col flex-1 overflow-hidden">
 
                 {/* Top bar */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-                    <div className="flex items-center gap-4">
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0 gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="md:hidden p-1 text-gray-800"
+                            className="md:hidden p-1 text-gray-800 shrink-0"
                             aria-label="Open menu"
                         >
                             <Menu size={22} />
                         </button>
-                        <h1 className="text-lg font-semibold text-gray-900">{pageTitle}</h1>
+                        <h1 className="text-lg font-semibold text-gray-900 truncate">{pageTitle}</h1>
                     </div>
-                    <button className="bg-black text-white text-sm px-4 py-2 rounded-lg hover:opacity-80 transition">
-                        + New Appointment
+                    <button className="shrink-0 bg-black text-white text-sm px-3 py-2 rounded-lg hover:opacity-80 transition flex items-center gap-1.5">
+                        <span className="text-base leading-none">+</span>
+                        <span className="hidden sm:inline">New Appointment</span>
                     </button>
                 </header>
 
