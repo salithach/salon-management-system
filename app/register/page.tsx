@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2 } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
@@ -25,25 +26,32 @@ const steps = [
 ]
 
 export default function RegisterPage() {
-    const { register, loading, error } = useAuthStore()
+    const { register, loading, error, token, _hasHydrated } = useAuthStore()
+    const router = useRouter()
     const [step, setStep] = useState(0)
     const [done, setDone] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
 
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
+    const [account, setAccount] = useState({ username: "salithach", email: "salitha@salonhq.com", password: "12345678", confirm: "12345678" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
+    const [owner, setOwner] = useState({ name: "Salitha Chathuranga", phoneNumber: "+1 555-0100" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "" })
+    const [salon, setSalon] = useState({ salonName: "SalonHQ Studio", salonType: "Hair Salon", website: "https://salonhq.com" })
 
     // Step 4 — location
-    const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
+    const [location, setLocation] = useState({ address: "123 Main Street, Suite 4", city: "Los Angeles", state: "CA", zipCode: "90001", country: "United States" })
 
     const [errors, setErrors] = useState<string[]>([])
+
+    useEffect(() => {
+        if (_hasHydrated && token) router.replace("/dashboard")
+    }, [_hasHydrated, token, router])
+
+    if (!_hasHydrated || token) return null
 
     const validate = (): boolean => {
         const errs: string[] = []

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/store/authStore"
@@ -9,8 +9,14 @@ import { Loader2 } from "lucide-react"
 export default function LoginPage() {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
-    const { login, loading, error } = useAuthStore()
+    const { login, loading, error, token, _hasHydrated } = useAuthStore()
     const router = useRouter()
+
+    useEffect(() => {
+        if (_hasHydrated && token) router.replace("/dashboard")
+    }, [_hasHydrated, token, router])
+
+    if (!_hasHydrated || token) return null
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
