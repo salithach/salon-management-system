@@ -34,16 +34,16 @@ export default function RegisterPage() {
     const [showConfirm, setShowConfirm] = useState(false)
 
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "salithach", email: "salitha@salonhq.com", password: "12345678", confirm: "12345678" })
+    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "Salitha Chathuranga", phoneNumber: "+1 555-0100" })
+    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "SalonHQ Studio", salonType: "Hair Salon", website: "https://salonhq.com" })
+    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "" })
 
     // Step 4 — location
-    const [location, setLocation] = useState({ address: "123 Main Street, Suite 4", city: "Los Angeles", state: "CA", zipCode: "90001", country: "United States" })
+    const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
 
     const [errors, setErrors] = useState<string[]>([])
 

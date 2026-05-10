@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react"
 export default function LoginPage() {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
+    const [validationError, setValidationError] = useState("")
     const { login, loading, error, token, _hasHydrated } = useAuthStore()
     const router = useRouter()
 
@@ -20,10 +21,11 @@ export default function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
+        setValidationError("")
+        if (!username.trim()) { setValidationError("Username is required."); return }
+        if (!password) { setValidationError("Password is required."); return }
         const success = await login(username, password)
-        if (success) {
-            router.push("/dashboard")
-        }
+        if (success) router.push("/dashboard")
     }
 
     return (
@@ -45,30 +47,27 @@ export default function LoginPage() {
                     <h2 className="text-2xl font-semibold mb-2">Sign In</h2>
                     <p className="text-sm text-gray-500 mb-6">Enter your credentials to continue</p>
 
-
-                    {/* Error message */}
-                    {error && (
+                    {/* Validation / API error — same banner */}
+                    {(validationError || error) && (
                         <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                            {error}
+                            {validationError || error}
                         </div>
                     )}
 
                     {/* Form */}
                     <form onSubmit={handleLogin} className="space-y-4">
                         <input
-                            type="username"
-                            placeholder="username"
+                            type="text"
+                            placeholder="Username"
                             value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
+                            onChange={(e) => { setUsername(e.target.value); setValidationError("") }}
                             className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black"
                         />
                         <input
                             type="password"
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
+                            onChange={(e) => { setPassword(e.target.value); setValidationError("") }}
                             className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black"
                         />
                         <button
