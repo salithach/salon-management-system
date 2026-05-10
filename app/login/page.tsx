@@ -7,8 +7,8 @@ import { useAuthStore } from "@/store/authStore"
 import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
-    const [username, setUsername] = useState("salithach")
-    const [password, setPassword] = useState("12345")
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
     const { login, loading, error } = useAuthStore()
     const router = useRouter()
 
@@ -18,10 +18,6 @@ export default function LoginPage() {
         if (success) {
             router.push("/dashboard")
         }
-    }
-
-    const handleGoogleLogin = () => {
-        console.log("Google login")
     }
 
     return (
@@ -43,20 +39,6 @@ export default function LoginPage() {
                     <h2 className="text-2xl font-semibold mb-2">Sign In</h2>
                     <p className="text-sm text-gray-500 mb-6">Enter your credentials to continue</p>
 
-                    {/* Google Button */}
-                    <button
-                        onClick={handleGoogleLogin}
-                        className="w-full border border-gray-300 rounded-lg py-2.5 mb-6 hover:bg-gray-100 transition cursor-pointer"
-                    >
-                        Continue with Google
-                    </button>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="h-px bg-gray-200 flex-1" />
-                        <span className="text-xs text-gray-400">OR</span>
-                        <div className="h-px bg-gray-200 flex-1" />
-                    </div>
 
                     {/* Error message */}
                     {error && (

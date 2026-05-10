@@ -32,19 +32,18 @@ export const useAuthStore = create<AuthState>()(
                         headers: { "Content-Type": "application/json" },
                     })
 
-                    const json = await res.json()
-                    console.log(json)
+                    const result = await res.json()
 
                     if (!res.ok) {
                         const msg =
-                            (typeof json.message === "object"
-                                ? json.message?.message
-                                : json.message) || "Login failed"
+                            (typeof result.message === "object"
+                                ? result.message?.message
+                                : result.message) || "Login failed"
                         set({ error: msg, loading: false })
                         return false
                     }
 
-                    const { token, roles } = json.data
+                    const { token, roles } = result.data
                     set({ user: { roles }, token, loading: false })
                     return true
                 } catch {
@@ -56,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
             register: async (formData: Record<string, unknown>) => {
                 try {
                     set({ loading: true, error: null })
+                    console.log("Registering user with data:", formData)
 
                     const res = await fetch("/api/register", {
                         method: "POST",
@@ -63,17 +63,17 @@ export const useAuthStore = create<AuthState>()(
                         headers: { "Content-Type": "application/json" },
                     })
 
-                    const data = await res.json()
+                    const result = await res.json()
                     if (!res.ok) {
-                        set({ error: data.message ?? "Registration failed", loading: false })
+                        const msg =
+                            (typeof result.message === "object"
+                                ? result.message?.message
+                                : result.message) || "Registration failed"
+                        set({ error: msg as string, loading: false })
                         return
                     }
 
-                    set({
-                        user: data.user,
-                        token: data.token,
-                        loading: false,
-                    })
+                    set({ loading: false })
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : "Network error"
                     set({ error: message, loading: false })

@@ -7,6 +7,12 @@ import { Store, User, Lock, Trash2, CheckCircle2, MapPin, Globe, AtSign, Save } 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
 
+const SALON_TYPES = [
+    "Hair Salon", "Barbershop", "Nail Salon", "Beauty Spa",
+    "Massage Studio", "Tanning Salon", "Waxing Studio",
+    "Full-Service Salon", "Bridal Studio", "Other",
+]
+
 export default function ProfilePage() {
     const { user } = useAuthStore()
     const role = user?.roles?.[0] ?? "User"
@@ -21,6 +27,7 @@ export default function ProfilePage() {
 
     const [salonForm, setSalonForm] = useState({
         salonName: "SalonHQ Studio",
+        salonType: "Hair Salon",
         username: "salithach",
         address: "123 Main Street, Suite 4",
         city: "Los Angeles",
@@ -103,6 +110,17 @@ export default function ProfilePage() {
                                 onChange={(e) => setSalonForm({ ...salonForm, salonName: e.target.value })}
                                 className={inputCls}
                             />
+                        </div>
+                        <div>
+                            <label className={labelCls}>Salon Type</label>
+                            <select
+                                value={salonForm.salonType}
+                                onChange={(e) => setSalonForm({ ...salonForm, salonType: e.target.value })}
+                                className={inputCls}
+                            >
+                                <option value="">Select a type…</option>
+                                {SALON_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
                         </div>
                         <div>
                             <label className={labelCls}>Username</label>
