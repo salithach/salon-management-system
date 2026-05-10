@@ -18,7 +18,7 @@ export default function SignupPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="flex-1 flex items-start md:items-center justify-center bg-gray-50 px-4 py-6 md:py-8">
 
             <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white shadow-xl rounded-2xl overflow-hidden">
 
@@ -39,7 +39,7 @@ export default function SignupPage() {
                 </div>
 
                 {/* Right Panel */}
-                <div className="p-10">
+                <div className="p-6 sm:p-10">
 
                     <h2 className="text-2xl font-semibold mb-2">
                         Create Account

@@ -25,7 +25,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="flex-1 flex items-start md:items-center justify-center bg-gray-50 px-4 py-6 md:py-8">
             <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white shadow-xl rounded-2xl overflow-hidden">
 
                 {/* Left Panel (branding) */}
@@ -39,7 +39,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Right Panel (form) */}
-                <div className="p-10">
+                <div className="p-6 sm:p-10">
                     <h2 className="text-2xl font-semibold mb-2">Sign In</h2>
                     <p className="text-sm text-gray-500 mb-6">Enter your credentials to continue</p>
 
