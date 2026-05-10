@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useAuthStore } from "@/store/authStore"
 
 import { LayoutDashboard, CalendarDays, Users, Scissors, UserCheck, BarChart3, Menu, X, ChevronRight } from "lucide-react"
@@ -11,7 +11,11 @@ export default function Navbar() {
     const [open, setOpen] = useState(false)
     const { token, logout } = useAuthStore()
     const router = useRouter()
+    const pathname = usePathname()
     const isLoggedIn = !!token
+
+    // Dashboard has its own sidebar and top bar — suppress the global navbar there
+    if (pathname?.startsWith("/dashboard")) return null
 
     const handleLogout = () => {
         logout()
@@ -36,7 +40,7 @@ export default function Navbar() {
     ]
 
     return (
-        <div className="fixed top-0 left-0 w-full z-50 bg-zinc-800 backdrop-blur-md border-b border-white/10">
+        <div className="sticky top-0 left-0 w-full z-50 bg-zinc-800 backdrop-blur-md border-b border-white/10">
                 <div className="w-full flex items-center justify-between h-16 px-6 lg:px-4">
 
                 {/* Logo */}
