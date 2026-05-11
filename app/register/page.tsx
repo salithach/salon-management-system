@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2 } from "lucide-react"
+import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2, CalendarDays, UserCheck, Scissors, BarChart3, Users, Bell, CreditCard } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
@@ -117,8 +117,43 @@ export default function RegisterPage() {
     )
 
     return (
-        <div className="flex-1 flex items-start md:items-center justify-center bg-gray-50 px-4 py-6 md:py-8">
-            <div className="w-full max-w-lg">
+        <div className="flex-1 flex items-start lg:items-center justify-center bg-gray-50 px-4 py-6 lg:py-8">
+            <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-8 lg:gap-12 items-start lg:items-center">
+
+                {/* ── Left branding panel (desktop only) ── */}
+                <div className="hidden lg:flex flex-col gap-7 flex-1 max-w-sm">
+                    {/* Logo + tagline */}
+                    <div>
+                        <p className="text-2xl font-bold text-gray-900 tracking-tight">SalonHQ</p>
+                        <p className="text-sm text-gray-500 mt-1">Everything your salon needs, in one place.</p>
+                    </div>
+
+                    {/* Feature list */}
+                    <ul className="space-y-4">
+                        {[
+                            { icon: CalendarDays, title: "Smart Scheduling",   desc: "Manage bookings with a real-time calendar" },
+                            { icon: UserCheck,    title: "Staff Management",   desc: "Assign shifts, track jobs & earnings daily" },
+                            { icon: Scissors,     title: "Service Catalogue",  desc: "Build & price your full treatment menu" },
+                            { icon: BarChart3,    title: "Revenue Insights",   desc: "Visual reports per staff, service & period" },
+                            { icon: Users,        title: "Client Profiles",    desc: "Store history, notes & preferences per client" },
+                            { icon: Bell,         title: "Smart Notifications",desc: "Automated reminders to reduce no-shows" },
+                            { icon: CreditCard,   title: "Payment Tracking",   desc: "Log and track earnings per appointment" }
+                        ].map(({ icon: Icon, title, desc }) => (
+                            <li key={title} className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
+                                    <Icon size={17} className="text-zinc-700" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900">{title}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* ── Right: stepper + form ── */}
+                <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0">
 
                 {/* Progress stepper */}
                 <div className="flex items-center justify-between mb-6 px-1">
@@ -334,6 +369,7 @@ export default function RegisterPage() {
                     Already have an account?{" "}
                     <Link href="/login" className="text-black font-medium hover:underline">Sign in</Link>
                 </p>
+                </div> {/* end right column */}
             </div>
         </div>
     )
