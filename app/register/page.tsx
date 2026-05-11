@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2, CalendarDays, UserCheck, Scissors, BarChart3, Users, Bell } from "lucide-react"
+import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2, CalendarDays, UserCheck, Scissors, BarChart3, Package, Bell } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                             { icon: UserCheck,    title: "Staff Management",    desc: "Assign shifts, track jobs & earnings daily" },
                             { icon: Scissors,     title: "Service Catalogue",   desc: "Build & price your full treatment menu" },
                             { icon: BarChart3,    title: "Revenue Insights",    desc: "Visual reports per staff, service & period" },
-                            { icon: Users,        title: "Client Profiles",     desc: "Store history, notes & preferences per client" },
+                            { icon: Package,      title: "Inventory Management", desc: "Track stock levels for salon products" },
                             { icon: Bell,         title: "Smart Notifications", desc: "Automated reminders to reduce no-shows" }
                         ].map(({ icon: Icon, title, desc }) => (
                             <li key={title} className="flex items-center gap-3">

@@ -1,0 +1,317 @@
+"use client"
+
+import { useState } from "react"
+import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCircle2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { useInventoryStore, InventoryItem } from "@/store/inventoryStore"
+import DropDown from "@/components/DropDown"
+
+const CATEGORIES = ["All", "Styling", "Coloring", "Hair Care", "Nail Care", "Skin Care", "Waxing", "Tools", "Cleaning", "Other"]
+const UNITS = ["pcs", "bottles", "tubes", "kg", "g", "ml", "L", "boxes", "rolls"]
+
+const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
+const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
+
+function stockStatus(item: InventoryItem) {
+    if (item.quantity === 0) return { label: "Out of stock", color: "bg-red-100 text-red-600" }
+    if (item.quantity <= item.lowStockThreshold) return { label: "Low stock", color: "bg-amber-100 text-amber-700" }
+    return { label: "In stock", color: "bg-green-100 text-green-700" }
+}
+
+type FormData = { name: string; category: string; quantity: string; unit: string; lowStockThreshold: string; notes: string }
+const emptyForm: FormData = { name: "", category: "Styling", quantity: "", unit: "pcs", lowStockThreshold: "3", notes: "" }
+
+export default function InventoryPage() {
+    const { items, _hasHydrated, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
+
+    const [search, setSearch] = useState("")
+    const [categoryFilter, setCategoryFilter] = useState("All")
+    const [modal, setModal] = useState<"add" | "edit" | null>(null)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [form, setForm] = useState<FormData>(emptyForm)
+    const [formError, setFormError] = useState("")
+
+    if (!_hasHydrated) return (
+        <div className="flex items-center justify-center h-48 text-gray-400 gap-2">
+            <Loader2 size={18} className="animate-spin" /> Loading inventory…
+        </div>
+    )
+
+    const filtered = items.filter((item) => {
+        const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
+        const matchCat = categoryFilter === "All" || item.category === categoryFilter
+        return matchSearch && matchCat
+    })
+
+    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.lowStockThreshold).length
+    const outCount = items.filter((i) => i.quantity === 0).length
+
+    const openAdd = () => { setForm(emptyForm); setFormError(""); setModal("add") }
+    const openEdit = (item: InventoryItem) => {
+        setForm({
+            name: item.name, category: item.category,
+            quantity: String(item.quantity), unit: item.unit,
+            lowStockThreshold: String(item.lowStockThreshold),
+            notes: item.notes ?? "",
+        })
+        setEditingId(item.id)
+        setFormError("")
+        setModal("edit")
+    }
+    const closeModal = () => { setModal(null); setEditingId(null) }
+
+    const handleSave = () => {
+        if (!form.name.trim()) { setFormError("Item name is required."); return }
+        if (!form.quantity || isNaN(Number(form.quantity))) { setFormError("Valid quantity is required."); return }
+        const payload = {
+            name: form.name.trim(),
+            category: form.category,
+            quantity: Number(form.quantity),
+            unit: form.unit,
+            lowStockThreshold: Number(form.lowStockThreshold) || 0,
+            notes: form.notes.trim() || undefined,
+        }
+        if (modal === "add") {
+            addItem(payload)
+            toast.success("Item added", { description: `${payload.name} added to inventory.` })
+        } else if (modal === "edit" && editingId) {
+            updateItem(editingId, payload)
+            toast.success("Item updated", { description: `${payload.name} has been updated.` })
+        }
+        closeModal()
+    }
+
+    const handleDelete = (item: InventoryItem) => {
+        deleteItem(item.id)
+        toast.success("Item removed", { description: `${item.name} removed from inventory.` })
+    }
+
+    return (
+        <>
+            {/* Alert banner */}
+            {(lowCount > 0 || outCount > 0) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
+                    <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                    <p className="text-sm text-amber-700">
+                        {outCount > 0 && <span className="font-semibold">{outCount} item{outCount > 1 ? "s" : ""} out of stock</span>}
+                        {outCount > 0 && lowCount > 0 && " · "}
+                        {lowCount > 0 && <span>{lowCount} item{lowCount > 1 ? "s" : ""} running low</span>}
+                    </p>
+                </div>
+            )}
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                    { label: "Total Items",  value: items.length },
+                    { label: "In Stock",     value: items.filter(i => i.quantity > i.lowStockThreshold).length },
+                    { label: "Low Stock",    value: lowCount },
+                    { label: "Out of Stock", value: outCount },
+                ].map((s) => (
+                    <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                        <p className="text-xs text-gray-500 mb-1">{s.label}</p>
+                        <p className="text-3xl font-bold text-gray-900">{s.value}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Toolbar */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[180px]">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search items…"
+                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
+                    />
+                </div>
+
+                {/* Category filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {CATEGORIES.map((c) => (
+                        <button
+                            key={c}
+                            onClick={() => setCategoryFilter(c)}
+                            className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                                categoryFilter === c
+                                    ? "bg-zinc-800 text-white border-zinc-800"
+                                    : "border-gray-200 text-gray-600 hover:border-gray-400"
+                            }`}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    onClick={openAdd}
+                    className="ml-auto flex items-center gap-1.5 text-sm bg-zinc-800 text-white px-4 py-2 rounded-lg hover:bg-zinc-700 transition shrink-0"
+                >
+                    <Plus size={14} /> Add Item
+                </button>
+            </div>
+
+            {/* Inventory grid */}
+            {filtered.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-12 text-center">
+                    <Package size={32} className="mx-auto text-gray-200 mb-2" />
+                    <p className="text-sm text-gray-400">No items found</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((item) => {
+                        const status = stockStatus(item)
+                        return (
+                            <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-gray-300 hover:shadow-md transition">
+                                {/* Header */}
+                                <div className="flex items-start justify-between gap-2 mb-3">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>
+                                    </div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${status.color}`}>
+                                        {status.label}
+                                    </span>
+                                </div>
+
+                                {/* Quantity control */}
+                                <div className="flex items-center justify-between border-t border-gray-50 pt-3 pb-3">
+                                    <div>
+                                        <p className="text-2xl font-bold text-gray-900">{item.quantity}</p>
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">{item.unit}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => adjustQty(item.id, -1)}
+                                            disabled={item.quantity === 0}
+                                            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-30"
+                                        >
+                                            <Minus size={13} />
+                                        </button>
+                                        <button
+                                            onClick={() => adjustQty(item.id, 1)}
+                                            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
+                                        >
+                                            <Plus size={13} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Low stock indicator */}
+                                <div className="mb-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[10px] text-gray-400">Stock level</span>
+                                        <span className="text-[10px] text-gray-400">Threshold: {item.lowStockThreshold}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                item.quantity === 0 ? "bg-red-400" :
+                                                item.quantity <= item.lowStockThreshold ? "bg-amber-400" : "bg-green-400"
+                                            }`}
+                                            style={{ width: `${Math.min(100, (item.quantity / Math.max(item.lowStockThreshold * 3, 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {item.notes && (
+                                    <p className="text-xs text-gray-400 mb-3 italic truncate">{item.notes}</p>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 border-t border-gray-50 pt-3">
+                                    <button
+                                        onClick={() => openEdit(item)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-xs border border-gray-200 py-2 rounded-lg hover:bg-gray-50 transition"
+                                    >
+                                        <Pencil size={12} /> Edit
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(item)}
+                                        className="flex items-center justify-center gap-1.5 text-xs border border-red-100 text-red-500 py-2 px-3 rounded-lg hover:bg-red-50 transition"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Add / Edit Modal */}
+            {modal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">{modal === "add" ? "Add Item" : "Edit Item"}</h3>
+                                <p className="text-xs text-gray-400 mt-0.5">Salon inventory</p>
+                            </div>
+                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition"><X size={20} /></button>
+                        </div>
+
+                        {formError && (
+                            <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{formError}</div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className={labelCls}>Item Name</label>
+                                <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                    placeholder="e.g. Hair Wax" className={inputCls} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Category</label>
+                                    <DropDown
+                                        options={CATEGORIES.filter(c => c !== "All")}
+                                        value={form.category}
+                                        onChange={(v) => setForm({ ...form, category: v })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Unit</label>
+                                    <DropDown
+                                        options={UNITS}
+                                        value={form.unit}
+                                        onChange={(v) => setForm({ ...form, unit: v })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Quantity</label>
+                                    <input type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })}
+                                        placeholder="0" className={inputCls} />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Low Stock Alert At</label>
+                                    <input type="number" min="0" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })}
+                                        placeholder="3" className={inputCls} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelCls}>Notes <span className="text-gray-400">(optional)</span></label>
+                                <input type="text" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+                                    placeholder="e.g. Order from supplier X" className={inputCls} />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={closeModal} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                            <button onClick={handleSave}
+                                className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition flex items-center justify-center gap-1.5">
+                                <CheckCircle2 size={14} />
+                                {modal === "add" ? "Add Item" : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    )
+}
+

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useAuthStore } from "@/store/authStore"
 import {
     LayoutDashboard, CalendarDays, Users, Scissors,
-    UserCheck, BarChart3, LogOut, ChevronRight, Menu, X
+    UserCheck, BarChart3, LogOut, ChevronRight, Menu, X, Package
 } from "lucide-react"
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
     { label: "Clients",      href: "/dashboard/clients",      icon: Users },
     { label: "Services",     href: "/dashboard/services",     icon: Scissors },
     { label: "Staff",        href: "/dashboard/staff",        icon: UserCheck },
+    { label: "Inventory",    href: "/dashboard/inventory",    icon: Package },
     { label: "Reports",      href: "/dashboard/reports",      icon: BarChart3 },
 ]
 
@@ -24,6 +25,7 @@ const pageTitles: Record<string, string> = {
     "/dashboard/clients": "Clients",
     "/dashboard/services": "Services",
     "/dashboard/staff": "Staff",
+    "/dashboard/inventory": "Inventory",
     "/dashboard/reports": "Reports",
     "/dashboard/profile": "My Profile",
 }
