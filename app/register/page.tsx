@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2, CalendarDays, UserCheck, Scissors, BarChart3, Users, Bell, CreditCard } from "lucide-react"
+import { User, Store, MapPin, Lock, ChevronRight, ChevronLeft, CheckCircle2, Globe, AtSign, Phone, Eye, EyeOff, Loader2, CalendarDays, UserCheck, Scissors, BarChart3, Users, Bell } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
@@ -117,35 +117,34 @@ export default function RegisterPage() {
     )
 
     return (
-        <div className="flex-1 flex items-start lg:items-center justify-center bg-gray-50 px-4 py-6 lg:py-8">
-            <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-8 lg:gap-12 items-start lg:items-center">
+        <div className="flex-1 flex items-start lg:items-center justify-center bg-gray-50 px-4 py-6 lg:py-8 overflow-x-hidden">
+            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col lg:flex-row items-stretch">
 
                 {/* ── Left branding panel (desktop only) ── */}
-                <div className="hidden lg:flex flex-col gap-7 flex-1 max-w-sm">
+                <div className="hidden lg:flex flex-col gap-7 w-80 shrink-0 bg-zinc-900 text-white p-10 justify-center">
                     {/* Logo + tagline */}
                     <div>
-                        <p className="text-2xl font-bold text-gray-900 tracking-tight">SalonHQ</p>
-                        <p className="text-sm text-gray-500 mt-1">Everything your salon needs, in one place.</p>
+                        <p className="text-2xl font-bold text-white tracking-tight">SalonHQ</p>
+                        <p className="text-sm text-white/60 mt-1">Everything your salon needs, in one place.</p>
                     </div>
 
                     {/* Feature list */}
                     <ul className="space-y-4">
                         {[
-                            { icon: CalendarDays, title: "Smart Scheduling",   desc: "Manage bookings with a real-time calendar" },
-                            { icon: UserCheck,    title: "Staff Management",   desc: "Assign shifts, track jobs & earnings daily" },
-                            { icon: Scissors,     title: "Service Catalogue",  desc: "Build & price your full treatment menu" },
-                            { icon: BarChart3,    title: "Revenue Insights",   desc: "Visual reports per staff, service & period" },
-                            { icon: Users,        title: "Client Profiles",    desc: "Store history, notes & preferences per client" },
-                            { icon: Bell,         title: "Smart Notifications",desc: "Automated reminders to reduce no-shows" },
-                            { icon: CreditCard,   title: "Payment Tracking",   desc: "Log and track earnings per appointment" }
+                            { icon: CalendarDays, title: "Smart Scheduling",    desc: "Manage bookings with a real-time calendar" },
+                            { icon: UserCheck,    title: "Staff Management",    desc: "Assign shifts, track jobs & earnings daily" },
+                            { icon: Scissors,     title: "Service Catalogue",   desc: "Build & price your full treatment menu" },
+                            { icon: BarChart3,    title: "Revenue Insights",    desc: "Visual reports per staff, service & period" },
+                            { icon: Users,        title: "Client Profiles",     desc: "Store history, notes & preferences per client" },
+                            { icon: Bell,         title: "Smart Notifications", desc: "Automated reminders to reduce no-shows" }
                         ].map(({ icon: Icon, title, desc }) => (
                             <li key={title} className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
-                                    <Icon size={17} className="text-zinc-700" />
+                                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                                    <Icon size={17} className="text-white/80" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-900">{title}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                                    <p className="text-sm font-semibold text-white">{title}</p>
+                                    <p className="text-xs text-white/50 mt-0.5">{desc}</p>
                                 </div>
                             </li>
                         ))}
@@ -153,10 +152,11 @@ export default function RegisterPage() {
                 </div>
 
                 {/* ── Right: stepper + form ── */}
-                <div className="flex-1 w-full max-w-lg mx-auto lg:mx-0">
+                <div className="flex-1 w-full p-6 lg:p-10">
 
                 {/* Progress stepper */}
-                <div className="flex items-center justify-between mb-6 px-1">
+                <div className="flex items-center justify-center mb-6">
+                    <div className="flex items-center w-full">
                     {steps.map((s, i) => {
                         const Icon = s.icon
                         const isComplete = i < step
@@ -180,10 +180,11 @@ export default function RegisterPage() {
                             </div>
                         )
                     })}
+                    </div>
                 </div>
 
                 {/* Card */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                         {(() => { const Icon = steps[step].icon; return <Icon size={16} className="text-gray-500 shrink-0" /> })()}
