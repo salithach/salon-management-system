@@ -8,6 +8,7 @@ export type StaffAssignmentState = {
     todayJobs: Record<string, JobEntry[]>
     _hasHydrated: boolean
     assign: (names: string[]) => void
+    unassign: (name: string) => void
     addJob: (name: string, job: JobEntry) => void
     clear: () => void
     setHasHydrated: (v: boolean) => void
@@ -20,7 +21,17 @@ export const useStaffAssignmentStore = create<StaffAssignmentState>()(
             todayJobs: {},
             _hasHydrated: false,
             setHasHydrated: (v) => set({ _hasHydrated: v }),
-            assign: (names) => set({ assignedToday: names }),
+            assign: (names) =>
+                set((state) => ({
+                    assignedToday: [
+                        ...state.assignedToday,
+                        ...names.filter((n) => !state.assignedToday.includes(n)),
+                    ],
+                })),
+            unassign: (name) =>
+                set((state) => ({
+                    assignedToday: state.assignedToday.filter((n) => n !== name),
+                })),
             addJob: (name, job) =>
                 set((state) => ({
                     todayJobs: {
