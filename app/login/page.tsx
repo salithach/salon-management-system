@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex-1 flex items-start md:items-center justify-center bg-gray-50 px-4 py-6 md:py-8">
-            <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white shadow-xl rounded-2xl overflow-hidden">
+            <div className="w-full max-w-4xl grid md:grid-cols-2 bg-white shadow-xl rounded-2xl overflow-hidden text-gray-900">
 
                 {/* Left Panel (branding) */}
                 <div className="hidden md:flex flex-col justify-center p-10 bg-black text-white">
@@ -61,14 +61,14 @@ export default function LoginPage() {
                             placeholder="Username"
                             value={username}
                             onChange={(e) => { setUsername(e.target.value); setValidationError("") }}
-                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black"
+                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
                         />
                         <input
                             type="password"
                             placeholder="Password"
                             value={password}
                             onChange={(e) => { setPassword(e.target.value); setValidationError("") }}
-                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black"
+                            className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
                         />
                         <button
                             type="submit"

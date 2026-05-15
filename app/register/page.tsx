@@ -9,7 +9,7 @@ import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
 import SuccessScreen from "@/components/SuccessScreen"
 
-const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
+const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
 
 const SALON_TYPES = [
@@ -118,7 +118,7 @@ export default function RegisterPage() {
 
     return (
         <div className="flex-1 flex items-start lg:items-center justify-center bg-gray-50 px-4 py-6 lg:py-8 overflow-x-hidden">
-            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col lg:flex-row items-stretch">
+            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col lg:flex-row items-stretch text-gray-900">
 
                 {/* ── Left branding panel (desktop only) ── */}
                 <div className="hidden lg:flex flex-col gap-7 w-80 shrink-0 bg-zinc-900 text-white p-10 justify-center">
