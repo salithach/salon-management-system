@@ -12,11 +12,11 @@ import { JobEntry, StaffAssignmentState, useStaffAssignmentStore } from "@/store
 import DropDown from "@/components/DropDown"
 
 const allStaff = [
-    { name: "Mia Chen",    role: "Senior Stylist",  status: "Available" },
-    { name: "Lena Park",   role: "Stylist",          status: "Available" },
-    { name: "Sara Kim",    role: "Nail Technician",  status: "Busy"      },
-    { name: "Jade Rivera", role: "Esthetician",      status: "Available" },
-    { name: "Priya Nair",  role: "Stylist",          status: "Available" },
+    { name: "Mia Chen",    role: "Senior Stylist",  status: "" },
+    { name: "Lena Park",   role: "Stylist",          status: "" },
+    { name: "Sara Kim",    role: "Nail Technician",  status: ""      },
+    { name: "Jade Rivera", role: "Esthetician",      status: "" },
+    { name: "Priya Nair",  role: "Stylist",          status: "" },
 ]
 
 const serviceOptions = [

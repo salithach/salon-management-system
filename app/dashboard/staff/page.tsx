@@ -106,8 +106,7 @@ export default function StaffPage() {
             {/* Page header */}
             <div className="flex items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-lg font-semibold text-gray-900">Staff</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">Manage your team and assign them for today</p>
+                    <p className="text-sm font-semibold text-gray-500 mt-0.5">Manage your team and assign them for today</p>
                 </div>
                 <button
                     onClick={openAdd}
