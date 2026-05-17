@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Users, Scissors, BarChart3, UserCheck, ChevronRight, Plus, X } from "lucide-react"
 import { toast } from "sonner"
@@ -8,27 +8,16 @@ import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
     PieChart, Pie, Cell
 } from "recharts"
-import { JobEntry, StaffAssignmentState, useStaffAssignmentStore } from "@/store/staffStore"
+import { JobEntry, StaffMember, StaffState, useStaffAssignmentStore } from "@/store/staffStore"
+import { useAuthStore } from "@/store/authStore"
+import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
-
-const allStaff = [
-    { name: "Mia Chen",    role: "Senior Stylist",  status: "" },
-    { name: "Lena Park",   role: "Stylist",          status: "" },
-    { name: "Sara Kim",    role: "Nail Technician",  status: ""      },
-    { name: "Jade Rivera", role: "Esthetician",      status: "" },
-    { name: "Priya Nair",  role: "Stylist",          status: "" },
-]
 
 const serviceOptions = [
     "Haircut & Blowout", "Hair Coloring", "Full Highlights", "Deep Conditioning",
     "Manicure", "Pedicure", "Nail Art", "Eyebrow Threading", "Facial", "Lash Extensions",
 ]
 
-const statusColor: Record<string, string> = {
-    Available: "bg-green-100 text-green-700",
-    Busy: "bg-amber-100 text-amber-700",
-    "Off Today": "bg-gray-100 text-gray-400",
-}
 
 const stats = [
     { label: "Today's Appointments", value: "12", change: "+3 from yesterday" },
@@ -38,10 +27,15 @@ const stats = [
 ]
 
 export default function DashboardPage() {
-    const { assignedToday, todayJobs, addJob, _hasHydrated } = useStaffAssignmentStore() as StaffAssignmentState
-    const todayStaff = _hasHydrated
-        ? allStaff.filter((s) => assignedToday.includes(s.name))
-        : []
+    const { todayJobs, addJob, assignmentsLoading, fetchAssignments } = useStaffAssignmentStore() as unknown as StaffState
+    const todayStaff: StaffMember[] = useStaffAssignmentStore((s) => (s as unknown as { assignedStaff: StaffMember[] }).assignedStaff) ?? []
+
+    const { _hasHydrated: authReady } = useAuthStore()
+
+    useEffect(() => {
+        if (!authReady) return
+        fetchAssignments()
+    }, [authReady])
 
     // Modal state
     const [modalMember, setModalMember] = useState<string | null>(null)
@@ -80,10 +74,10 @@ export default function DashboardPage() {
         "#27272a", "#3f3f46", "#52525b", "#71717a",
         "#a1a1aa", "#d4d4d8", "#18181b", "#09090b",
     ]
-    const allJobs = Object.values(todayJobs).flat()
-    const serviceCounts = allJobs.reduce<Record<string, number>>((acc, job) => {
+    const allJobs: JobEntry[] = Object.values(todayJobs).flat()
+    const serviceCounts = allJobs.reduce<Record<string, number>>((acc, job: JobEntry) => {
         const services = Array.isArray(job.service) ? job.service : [job.service]
-        services.forEach((s) => { acc[s] = (acc[s] ?? 0) + 1 })
+        services.forEach((s: string) => { acc[s] = (acc[s] ?? 0) + 1 })
         return acc
     }, {})
     const serviceChartData = Object.entries(serviceCounts)
@@ -92,6 +86,7 @@ export default function DashboardPage() {
 
     return (
         <>
+            {assignmentsLoading && <LoadingOverlay message="Loading dashboard…" />}
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((stat) => (
@@ -127,14 +122,14 @@ export default function DashboardPage() {
                         {/* Staff cards grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                             {todayStaff.map((member) => {
-                                const jobs = getJobs(member.name)
-                                const income = getIncome(member.name)
+                                const jobs = getJobs(member.username)
+                                const income = getIncome(member.username)
                                 return (
                                     <div
-                                        key={member.name}
+                                        key={member.id}
                                         className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-gray-300 hover:shadow-md transition"
                                     >
-                                        {/* Header: avatar + name + status */}
+                                        {/* Header: avatar + name */}
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="w-11 h-11 rounded-full bg-zinc-800 text-white flex items-center justify-center text-base font-semibold shrink-0">
                                                 {member.name[0]}
@@ -143,9 +138,6 @@ export default function DashboardPage() {
                                                 <p className="text-sm font-semibold text-gray-900 truncate">{member.name}</p>
                                                 <p className="text-xs text-gray-400 truncate">{member.role}</p>
                                             </div>
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColor[member.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                                {member.status}
-                                            </span>
                                         </div>
 
                                         {/* Stats row */}
@@ -163,7 +155,7 @@ export default function DashboardPage() {
 
                                         {/* Add Job button */}
                                         <button
-                                            onClick={() => openModal(member.name)}
+                                            onClick={() => openModal(member.username)}
                                             className="w-full flex items-center justify-center gap-1.5 text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-95 transition"
                                         >
                                             <Plus size={12} /> Add Job
@@ -179,14 +171,14 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-4">
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-gray-900">
-                                        {todayStaff.reduce((s, m) => s + getJobs(m.name).length, 0)}
+                                        {todayStaff.reduce((s, m) => s + getJobs(m.username).length, 0)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
                                 </div>
                                 <div className="w-px h-6 bg-gray-200 shrink-0" />
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-gray-900">
-                                        {"$"}{todayStaff.reduce((s, m) => s + getIncome(m.name), 0).toFixed(0)}
+                                        {"$"}{todayStaff.reduce((s, m) => s + getIncome(m.username), 0).toFixed(0)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
                                 </div>
@@ -196,9 +188,9 @@ export default function DashboardPage() {
                         {/* Charts */}
                         {(() => {
                             const chartData = todayStaff.map((m) => ({
-                                name: m.name.split(" ")[0],
-                                Jobs: getJobs(m.name).length,
-                                Revenue: getIncome(m.name),
+                                name: m.username,
+                                Jobs: getJobs(m.username).length,
+                                Revenue: getIncome(m.username),
                             }))
                             return (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

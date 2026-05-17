@@ -19,20 +19,24 @@ export type StaffMember = {
     specialty: string
 }
 
-type StaffState = {
+
+export type StaffState = {
     // ── Staff list ──────────────────────────────────────────
     staff: StaffMember[]
-    loading: boolean
+    staffLoading: boolean
     error: string | null
     fetchStaff: () => Promise<void>
     addStaff: (data: { name: string; username: string; email: string; phone: string; address: string; role: string; specialty: string }) => Promise<StaffMember>
-    removeStaff: (id: string) => Promise<void>
+    removeStaff: (username: string) => Promise<void>
 
-    // ── Today's assignments (in-memory only) ─────────────────
-    assignedToday: string[]
+    // ── Today's assignments ───────────────────────────────────
+    assignedToday: string[]        // usernames — used by staff page for isAssigned checks
+    assignedStaff: StaffMember[]   // full objects — used by dashboard for display
+    assignmentsLoading: boolean
     todayJobs: Record<string, JobEntry[]>
-    assign: (names: string[]) => void
-    unassign: (name: string) => void
+    fetchAssignments: () => Promise<void>
+    assign: (members: StaffMember[]) => Promise<void>
+    unassign: (member: StaffMember) => Promise<void>
     addJob: (name: string, job: JobEntry) => void
     clear: () => void
 }
@@ -40,12 +44,18 @@ type StaffState = {
 export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     // ── Staff list ──────────────────────────────────────────
     staff: [],
-    loading: false,
+    staffLoading: false,
     error: null,
 
     fetchStaff: async () => {
-        if (get().loading) return          // already in-flight — skip (covers StrictMode double-invoke)
-        set({ loading: true, error: null })
+        if (get().staffLoading) return
+        set({ staffLoading: true, error: null })
+        const MIN_MS = 800
+        const start = Date.now()
+        const wait = () => {
+            const elapsed = Date.now() - start
+            return new Promise<void>((r) => setTimeout(r, Math.max(0, MIN_MS - elapsed)))
+        }
         try {
             const res = await fetch("/api/staff", { headers: authHeaders() })
             const data = await res.json()
@@ -60,12 +70,14 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
                     phone: String(m.phone ?? m.phoneNumber ?? ""),
                     address: String(m.address ?? ""),
                     role: String(m.role ?? ""),
-                    specialty: String(m.specialty ?? m.specialty ?? ""),
+                    specialty: String(m.speciality ?? m.specialty ?? ""),
                 })
             )
-            set({ staff: list, loading: false })
+            await wait()
+            set({ staff: list, staffLoading: false })
         } catch (err) {
-            set({ error: (err as Error).message, loading: false })
+            await wait()
+            set({ error: (err as Error).message, staffLoading: false })
         }
     },
 
@@ -92,38 +104,96 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         return newMember
     },
 
-    removeStaff: async (id: string) => {
-        const res = await fetch(`/api/staff/${id}`, { method: "DELETE", headers: authHeaders() })
+    removeStaff: async (username: string) => {
+        const res = await fetch(`/api/staff/${username}`, { method: "DELETE", headers: authHeaders() })
         if (!res.ok) {
             const data = await res.json().catch(() => ({}))
             throw new Error(data?.message || "Failed to remove staff member")
         }
-        set((state) => ({ staff: state.staff.filter((s) => s.id !== id) }))
-        // Also remove from today's assignments if present
-        const member = get().staff.find((s) => s.id === id)
-        if (member) {
-            set((state) => ({
-                assignedToday: state.assignedToday.filter((n) => n !== member.name),
-            }))
+        set((state) => ({
+            staff: state.staff.filter((s) => s.username !== username),
+            assignedToday: state.assignedToday.filter((u) => u !== username),
+            assignedStaff: state.assignedStaff.filter((m) => m.username !== username),
+        }))
+    },
+
+    // ── Today's assignments ───────────────────────────────────
+    assignedToday: [],
+    assignedStaff: [],
+    assignmentsLoading: false,
+    todayJobs: {},
+
+    fetchAssignments: async () => {
+        if (get().assignmentsLoading) return
+        set({ assignmentsLoading: true })
+        const MIN_MS = 800
+        const start = Date.now()
+        const wait = () => {
+            const elapsed = Date.now() - start
+            return new Promise<void>((r) => setTimeout(r, Math.max(0, MIN_MS - elapsed)))
+        }
+        try {
+            const date = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+            const res = await fetch(`/api/assignments?date=${date}`, { headers: authHeaders() })
+            const data = await res.json()
+            if (!res.ok) { set({ assignmentsLoading: false }); return }
+
+            const assignees: StaffMember[] = data?.data?.members
+            console.log("[fetchAssignments] raw response:", JSON.stringify(assignees, null, 2))
+            await wait()
+            set({
+                assignedStaff: assignees,
+                assignedToday: assignees.map((m) => m.username),
+                assignmentsLoading: false,
+            })
+        } catch {
+            await wait()
+            set({ assignmentsLoading: false })
         }
     },
 
-    // ── Today's assignments (in-memory only) ─────────────────
-    assignedToday: [],
-    todayJobs: {},
-
-    assign: (names) =>
+    assign: async (members) => {
+        const usernames = members.map((m) => m.username)
+        const date = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+        // POST to server first — only update state if it succeeds
+        const res = await fetch("/api/assignments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ date, staffUsernames: usernames, members }),
+        })
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data?.message || "Failed to assign staff")
+        }
+        // Update in-memory state only after confirmed by server
         set((state) => ({
+            assignedStaff: [
+                ...state.assignedStaff,
+                ...members.filter((m) => !state.assignedToday.includes(m.username)),
+            ],
             assignedToday: [
                 ...state.assignedToday,
-                ...names.filter((n) => !state.assignedToday.includes(n)),
+                ...usernames.filter((u) => !state.assignedToday.includes(u)),
             ],
-        })),
+        }))
+    },
 
-    unassign: (name) =>
+    unassign: async (member) => {
+        const date = new Date().toISOString().slice(0, 10)
+        const res = await fetch("/api/assignments", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ date, members: [member] }),
+        })
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data?.message || "Failed to unassign staff")
+        }
         set((state) => ({
-            assignedToday: state.assignedToday.filter((n) => n !== name),
-        })),
+            assignedToday: state.assignedToday.filter((u) => u !== member.username),
+            assignedStaff: state.assignedStaff.filter((m) => m.username !== member.username),
+        }))
+    },
 
     addJob: (name, job) =>
         set((state) => ({
@@ -133,5 +203,5 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
             },
         })),
 
-    clear: () => set({ assignedToday: [], todayJobs: {} }),
+    clear: () => set({ assignedToday: [], assignedStaff: [], todayJobs: {} }),
 }))

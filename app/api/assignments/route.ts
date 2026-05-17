@@ -2,22 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 
 const API_BASE = process.env.API_BASE_URL
 
-const forwardAuth = (req: NextRequest): Record<string, string> => {
-    const auth = req.headers.get("Authorization")
-    return auth ? { Authorization: auth } : {}
-}
-
-type Params = { params: Promise<{ id: string }> }
-
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest) {
     if (!API_BASE) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const { id } = await params
-        const res = await fetch(`${API_BASE}/api/v1/staff/${id}`, {
+        const date = req.nextUrl.searchParams.get("date") ?? new Date().toISOString().slice(0, 10)
+        const auth = req.headers.get("Authorization") ?? ""
+        const res = await fetch(`${API_BASE}/api/v1/assignments?date=${date}`, {
             method: "GET",
-            headers: { "Content-Type": "application/json", ...forwardAuth(req) },
+            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
         })
 
         const data = await res.json()
@@ -27,30 +21,29 @@ export async function GET(req: NextRequest, { params }: Params) {
             const message =
                 (typeof raw === "object" ? raw?.message : raw) ||
                 data?.errors?.[0] ||
-                "Failed to fetch staff member"
+                "Failed to fetch assignments"
             return NextResponse.json({ message }, { status: res.status })
         }
 
         return NextResponse.json(data, { status: 200 })
     } catch {
         return NextResponse.json(
-            { message: "Failed to connect to staff server" },
+            { message: "Failed to connect to assignments server" },
             { status: 502 }
         )
     }
 }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest) {
     if (!API_BASE) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const { id } = await params
         const body = await req.json()
-
-        const res = await fetch(`${API_BASE}/api/v1/staff/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", ...forwardAuth(req) },
+        const auth = req.headers.get("Authorization") ?? ""
+        const res = await fetch(`${API_BASE}/api/v1/assignments/assign`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
             body: JSON.stringify(body),
         })
 
@@ -61,28 +54,30 @@ export async function PUT(req: NextRequest, { params }: Params) {
             const message =
                 (typeof raw === "object" ? raw?.message : raw) ||
                 data?.errors?.[0] ||
-                "Failed to update staff member"
+                "Failed to create assignment"
             return NextResponse.json({ message }, { status: res.status })
         }
 
-        return NextResponse.json(data, { status: 200 })
+        return NextResponse.json(data, { status: 201 })
     } catch {
         return NextResponse.json(
-            { message: "Failed to connect to staff server" },
+            { message: "Failed to connect to assignments server" },
             { status: 502 }
         )
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest) {
     if (!API_BASE) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const { id } = await params
-        const res = await fetch(`${API_BASE}/api/v1/staff/${id}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json", ...forwardAuth(req) },
+        const body = await req.json()
+        const auth = req.headers.get("Authorization") ?? ""
+        const res = await fetch(`${API_BASE}/api/v1/assignments/unassign`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
+            body: JSON.stringify(body),
         })
 
         const data = await res.json()
@@ -92,15 +87,16 @@ export async function DELETE(req: NextRequest, { params }: Params) {
             const message =
                 (typeof raw === "object" ? raw?.message : raw) ||
                 data?.errors?.[0] ||
-                "Failed to delete staff member"
+                "Failed to unassign staff"
             return NextResponse.json({ message }, { status: res.status })
         }
 
         return NextResponse.json(data, { status: 200 })
     } catch {
         return NextResponse.json(
-            { message: "Failed to connect to staff server" },
+            { message: "Failed to connect to unassign server" },
             { status: 502 }
         )
     }
 }
+

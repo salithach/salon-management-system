@@ -17,57 +17,65 @@ import {
     Phone,
     MapPin,
 } from "lucide-react"
-import { useStaffAssignmentStore } from "@/store/staffStore"
 import { toast } from "sonner"
+import { StaffMember, StaffState, useStaffAssignmentStore} from "@/store/staffStore"
+import {useAuthStore} from "@/store/authStore"
+import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 
 const ROLES = ["Senior Stylist", "Stylist", "Nail Technician", "Esthetician", "Barber", "Massage Therapist", "Receptionist"]
 
-const emptyForm = { name: "", username: "", email: "", phone: "", address: "", role: "", specialty: "" }
+const emptyForm = {name: "", username: "", email: "", phone: "", address: "", role: "", specialty: ""}
 
 export default function StaffPage() {
     const {
-        staff, loading, error, fetchStaff, addStaff, removeStaff,
-        assignedToday, assign, unassign, clear,
-    } = useStaffAssignmentStore()
+        staff, staffLoading, error, fetchStaff, addStaff, removeStaff,
+        assignedToday, assign, unassign, clear, fetchAssignments, assignmentsLoading,
+    } = useStaffAssignmentStore() as unknown as StaffState
+
+    const {_hasHydrated: authReady} = useAuthStore()
 
     const [selected, setSelected] = useState<string[]>([])
     const [showAddModal, setShowAddModal] = useState(false)
     const [form, setForm] = useState(emptyForm)
     const [formErrors, setFormErrors] = useState<string[]>([])
     const [formSaving, setFormSaving] = useState(false)
-    const [confirmRemove, setConfirmRemove] = useState<string | null>(null) // holds staff id
+    const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
+    const [confirmUnassign, setConfirmUnassign] = useState<StaffMember | null>(null)
 
-    useEffect(() => { fetchStaff() }, [])
+    // Fetch staff list + today's assignments from backend on load
+    useEffect(() => {
+        if (!authReady) return
+        fetchStaff()
+        fetchAssignments()
+    }, [authReady])
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-48 text-gray-400 gap-2">
-                <Loader2 size={18} className="animate-spin" /> Loading staff…
-            </div>
-        )
-    }
 
     if (error) {
         return (
             <div className="flex items-center justify-center h-48 text-red-400 gap-2">
-                <AlertCircle size={18} /> {error}
+                <AlertCircle size={18}/> {error}
             </div>
         )
     }
 
-    const toggle = (name: string) => {
-        if (assignedToday.includes(name)) return
+    const toggle = (username: string) => {
+        if (assignedToday.includes(username)) return
         setSelected((prev) =>
-            prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+            prev.includes(username) ? prev.filter((u) => u !== username) : [...prev, username]
         )
     }
 
-    const handleAssign = () => {
-        const newCount = selected.filter((n) => !assignedToday.includes(n)).length
-        assign(selected)
-        setSelected([])
-        toast.success(`${newCount} staff member${newCount !== 1 ? "s" : ""} assigned for today`)
+    const handleAssign = async () => {
+        const selectedStaff = staff.filter((s) => selected.includes(s.username))
+        const newCount = selectedStaff.filter((m) => !assignedToday.includes(m.username)).length
+        try {
+            await assign(selectedStaff)
+            setSelected([])
+            toast.success(`${newCount} staff member${newCount !== 1 ? "s" : ""} assigned for today`)
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
     }
 
     const handleClear = () => {
@@ -76,11 +84,11 @@ export default function StaffPage() {
         toast.success("Today's assignments reset")
     }
 
-    const handleRemoveStaff = async (id: string) => {
-        const member = staff.find((s) => s.id === id)
+    const handleRemoveStaff = async (username: string) => {
+        const member = staff.find((s) => s.username === username)
         try {
-            await removeStaff(id)
-            setSelected((prev) => prev.filter((n) => n !== member?.name))
+            await removeStaff(username)
+            setSelected((prev) => prev.filter((u) => u !== username))
             toast.success(`${member?.name ?? "Staff member"} removed from staff`)
         } catch (err) {
             toast.error((err as Error).message)
@@ -101,8 +109,8 @@ export default function StaffPage() {
         if (!form.phone.trim()) errs.push("Phone is required.")
         if (!form.role) errs.push("Role is required.")
         if (!form.specialty.trim()) errs.push("Specialty is required.")
-        if (staff.some((s) => s.name.toLowerCase() === form.name.trim().toLowerCase()))
-            errs.push("A staff member with this name already exists.")
+        if (staff.some((s) => s.username.toLowerCase() === form.username.trim().toLowerCase()))
+            errs.push("A staff member with this username already exists.")
         if (errs.length) { setFormErrors(errs); return }
 
         setFormSaving(true)
@@ -126,10 +134,11 @@ export default function StaffPage() {
     }
 
     // Find the name of the member pending confirmation (for display)
-    const confirmRemoveMember = confirmRemove ? staff.find((s) => s.id === confirmRemove) : null
+    const confirmRemoveMember = confirmRemove ? staff.find((s) => s.username === confirmRemove) : null
 
     return (
         <>
+            {(staffLoading || assignmentsLoading) && <LoadingOverlay message="Loading staff…" />}
             {/* Page header */}
             <div className="flex items-center justify-between gap-4">
                 <div>
@@ -178,12 +187,12 @@ export default function StaffPage() {
             {/* Staff cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {staff.map((member) => {
-                    const isSelected = selected.includes(member.name)
-                    const isAssigned = assignedToday.includes(member.name)
+                    const isSelected = selected.includes(member.username)
+                    const isAssigned = assignedToday.includes(member.username)
                     return (
                         <div
                             key={member.id}
-                            onClick={() => toggle(member.name)}
+                            onClick={() => toggle(member.username)}
                             className={`bg-white rounded-xl border shadow-sm p-5 transition ${
                                 isAssigned
                                     ? "border-green-100 cursor-default opacity-75"
@@ -202,7 +211,7 @@ export default function StaffPage() {
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); setConfirmRemove(member.id) }}
+                                        onClick={(e) => { e.stopPropagation(); setConfirmRemove(member.username) }}
                                         className="text-gray-300 hover:text-red-500 transition p-0.5 rounded"
                                         title="Remove staff member"
                                     >
@@ -237,8 +246,7 @@ export default function StaffPage() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation()
-                                                unassign(member.name)
-                                                toast.success(`${member.name} removed from today's assignments`)
+                                                setConfirmUnassign(member)
                                             }}
                                             className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition px-2 py-0.5 rounded-md hover:bg-red-50 border border-transparent hover:border-red-100"
                                         >
@@ -274,8 +282,7 @@ export default function StaffPage() {
                 </div>
             )}
 
-            {/* Confirm Remove Modal */}
-            {confirmRemove && (
+            {/* Confirm Remove Modal */}            {confirmRemove && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmRemove(null)} />
                     <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
@@ -304,6 +311,51 @@ export default function StaffPage() {
                                 className="flex items-center gap-2 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                             >
                                 <Trash2 size={13} /> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Unassign Modal */}
+            {confirmUnassign && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmUnassign(null)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                                <UserMinus size={17} className="text-amber-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900">Unassign Staff Member</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">They will be removed from today&apos;s schedule</p>
+                            </div>
+                        </div>
+                        <div className="h-px bg-gray-100" />
+                        <p className="text-sm text-gray-600">
+                            Are you sure you want to unassign <span className="font-semibold text-gray-900">{confirmUnassign.name}</span> from today?
+                        </p>
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                                onClick={() => setConfirmUnassign(null)}
+                                className="text-sm text-gray-600 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const member = confirmUnassign
+                                    setConfirmUnassign(null)
+                                    try {
+                                        await unassign(member)
+                                        toast.success(`${member.name} removed from today's assignments`)
+                                    } catch (err) {
+                                        toast.error((err as Error).message)
+                                    }
+                                }}
+                                className="flex items-center gap-2 text-sm bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition"
+                            >
+                                <UserMinus size={13} /> Unassign
                             </button>
                         </div>
                     </div>
