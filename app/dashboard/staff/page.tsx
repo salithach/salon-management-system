@@ -22,8 +22,7 @@ import { StaffMember, StaffState, useStaffAssignmentStore} from "@/store/staffSt
 import {useAuthStore} from "@/store/authStore"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
-
-const ROLES = ["Senior Stylist", "Stylist", "Nail Technician", "Esthetician", "Barber", "Massage Therapist", "Receptionist"]
+import {useJobRolesStore} from "@/store/jobRolesStore";
 
 const emptyForm = {name: "", username: "", email: "", phone: "", address: "", role: "", specialty: ""}
 
@@ -32,6 +31,10 @@ export default function StaffPage() {
         staff, staffLoading, error, fetchStaff, addStaff, removeStaff,
         assignedToday, assign, unassign, clear, fetchAssignments, assignmentsLoading,
     } = useStaffAssignmentStore() as unknown as StaffState
+
+    const { fetchJobRoles, jobRoles, jobRolesLoading } = useJobRolesStore()
+
+    const roleOptions = jobRoles.map((role) => ({ label: role.value, value: role.key }))
 
     const {_hasHydrated: authReady} = useAuthStore()
 
@@ -46,9 +49,10 @@ export default function StaffPage() {
     // Fetch staff list + today's assignments from backend on load
     useEffect(() => {
         if (!authReady) return
-        fetchStaff()
-        fetchAssignments()
-    }, [authReady])
+        fetchStaff().then(() => {})
+        fetchAssignments().then(() => {})
+        fetchJobRoles().then(() => {})
+    }, [authReady, fetchAssignments, fetchJobRoles, fetchStaff])
 
 
     if (error) {
@@ -99,6 +103,10 @@ export default function StaffPage() {
         setForm(emptyForm)
         setFormErrors([])
         setShowAddModal(true)
+        // Refetch roles if they haven't loaded yet
+        if (jobRoles.length === 0 && !jobRolesLoading) {
+            fetchJobRoles().then(() => {})
+        }
     }
 
     const handleAddStaff = async () => {
@@ -115,13 +123,14 @@ export default function StaffPage() {
 
         setFormSaving(true)
         try {
+            const matchedJobRole = jobRoles.find((r) => r.key === form.role)
             const newMember = await addStaff({
                 name: form.name.trim(),
                 username: form.username.trim(),
                 email: form.email.trim(),
                 phone: form.phone.trim(),
                 address: form.address.trim(),
-                role: form.role,
+                role: { key: form.role, name: matchedJobRole?.value ?? form.role },
                 specialty: form.specialty.trim(),
             })
             setShowAddModal(false)
@@ -138,7 +147,7 @@ export default function StaffPage() {
 
     return (
         <>
-            {(staffLoading || assignmentsLoading) && <LoadingOverlay message="Loading staff…" />}
+            {(staffLoading || assignmentsLoading || jobRolesLoading) && <LoadingOverlay message="Loading staff…" />}
             {/* Page header */}
             <div className="flex items-center justify-between gap-4">
                 <div>
@@ -207,7 +216,7 @@ export default function StaffPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-gray-900">{member.name}</p>
-                                    <p className="text-xs text-gray-500">{member.role}</p>
+                                    <p className="text-xs text-gray-500">{typeof member.role === "object" ? member.role?.name : member.role}</p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                                     <button
@@ -437,12 +446,16 @@ export default function StaffPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1.5">Role <span className="text-red-400">*</span></label>
+                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                                    Role <span className="text-red-400">*</span>
+                                    {jobRolesLoading && <Loader2 size={11} className="animate-spin text-gray-400" />}
+                                </label>
                                 <DropDown
-                                    options={ROLES}
+                                    options={roleOptions}
                                     value={form.role}
                                     onChange={(v) => setForm({ ...form, role: v })}
-                                    placeholder="Select a role…"
+                                    placeholder={jobRolesLoading ? "Loading roles…" : roleOptions.length === 0 ? "No roles available" : "Select a role…"}
+                                    disabled={jobRolesLoading}
                                 />
                             </div>
                             <div>

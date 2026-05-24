@@ -5,17 +5,12 @@ import { useAuthStore } from "@/store/authStore"
 import { Store, User, Lock, Trash2, MapPin, Globe, AtSign, Save, Pencil, X } from "lucide-react"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
+import { SALON_TYPES, SALON_TYPE_OPTIONS, resolveDescription } from "@/lib/constants"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
 const valueCls = "text-sm text-gray-800"
 const readFieldCls = "space-y-1"
-
-const SALON_TYPES = [
-    "Hair Salon", "Barbershop", "Nail Salon", "Beauty Spa",
-    "Massage Studio", "Tanning Salon", "Waxing Studio",
-    "Full-Service Salon", "Bridal Studio", "Other",
-]
 
 function ReadField({ label, value }: { label: string; value: string }) {
     return (
@@ -42,7 +37,7 @@ export default function ProfilePage() {
 
     const [salonForm, setSalonForm] = useState({
         salonName: "SalonHQ Studio",
-        salonType: "Hair Salon",
+        salonType: "HAIR_SALON",
         username: "salithach",
         address: "123 Main Street, Suite 4",
         city: "Los Angeles",
@@ -148,7 +143,7 @@ export default function ProfilePage() {
                             <div>
                                 <label className={labelCls}>Salon Type</label>
                                 <DropDown
-                                    options={SALON_TYPES}
+                                    options={SALON_TYPE_OPTIONS}
                                     value={salonDraft.salonType}
                                     onChange={(v) => setSalonDraft({ ...salonDraft, salonType: v })}
                                     placeholder="Select a type…"
@@ -200,7 +195,7 @@ export default function ProfilePage() {
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <ReadField label="Salon Name" value={salonForm.salonName} />
-                            <ReadField label="Salon Type" value={salonForm.salonType} />
+                            <ReadField label="Salon Type" value={SALON_TYPES.find((t) => t.code === salonForm.salonType)?.description ?? salonForm.salonType} />
                             <ReadField label="Username" value={`@${salonForm.username}`} />
                             <ReadField label="Website" value={salonForm.website} />
                         </div>

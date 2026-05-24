@@ -1,12 +1,18 @@
 import { create } from "zustand"
 import { useAuthStore } from "@/store/authStore"
+import { apiFetch } from "@/lib/apiFetch"
 
 const authHeaders = (): Record<string, string> => {
     const token = useAuthStore.getState().token
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-export type JobEntry = { service: string[]; price: number; description?: string }
+const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
+    const elapsed = Date.now() - start
+    return new Promise<void>(
+        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
+    )
+}
 
 export type StaffMember = {
     id: string
@@ -15,10 +21,22 @@ export type StaffMember = {
     email: string
     phone: string
     address: string
-    role: string
+    role: Role
     specialty: string
 }
 
+export type Role = {
+    key: string
+    name: string
+}
+
+export type JobEntry = {
+    date: string
+    service: string | string[]
+    price: number
+    description?: string
+    assignee: StaffMember
+}
 
 export type StaffState = {
     // ── Staff list ──────────────────────────────────────────
@@ -26,18 +44,18 @@ export type StaffState = {
     staffLoading: boolean
     error: string | null
     fetchStaff: () => Promise<void>
-    addStaff: (data: { name: string; username: string; email: string; phone: string; address: string; role: string; specialty: string }) => Promise<StaffMember>
+    addStaff: (data: { name: string; username: string; email: string; phone: string; address: string; role: Role; specialty: string }) => Promise<StaffMember>
     removeStaff: (username: string) => Promise<void>
 
     // ── Today's assignments ───────────────────────────────────
-    assignedToday: string[]        // usernames — used by staff page for isAssigned checks
-    assignedStaff: StaffMember[]   // full objects — used by dashboard for display
+    assignedToday: string[]
+    assignedStaff: StaffMember[]
     assignmentsLoading: boolean
     todayJobs: Record<string, JobEntry[]>
     fetchAssignments: () => Promise<void>
     assign: (members: StaffMember[]) => Promise<void>
     unassign: (member: StaffMember) => Promise<void>
-    addJob: (name: string, job: JobEntry) => void
+    addJob: (member: string, job: JobEntry) => void
     clear: () => void
 }
 
@@ -50,14 +68,8 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     fetchStaff: async () => {
         if (get().staffLoading) return
         set({ staffLoading: true, error: null })
-        const MIN_MS = 800
-        const start = Date.now()
-        const wait = () => {
-            const elapsed = Date.now() - start
-            return new Promise<void>((r) => setTimeout(r, Math.max(0, MIN_MS - elapsed)))
-        }
         try {
-            const res = await fetch("/api/staff", { headers: authHeaders() })
+            const res = await apiFetch("/api/staff", { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) throw new Error(data?.message || "Failed to fetch staff")
             // Normalise response — handle both array and { data: [...] } shapes
@@ -69,7 +81,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
                     email: String(m.email ?? ""),
                     phone: String(m.phone ?? m.phoneNumber ?? ""),
                     address: String(m.address ?? ""),
-                    role: String(m.role ?? ""),
+                    role: m.role,
                     specialty: String(m.speciality ?? m.specialty ?? ""),
                 })
             )
@@ -82,7 +94,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     },
 
     addStaff: async ({ name, username, email, phone, address, role, specialty }) => {
-        const res = await fetch("/api/staff", {
+        const res = await apiFetch("/api/staff", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
             body: JSON.stringify({ name, username, email, phone, address, role, specialty, status: "Available" }),
@@ -97,7 +109,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
             email: String(raw.email ?? email),
             phone: String(raw.phone ?? raw.phoneNumber ?? phone),
             address: String(raw.address ?? address),
-            role: String(raw.role ?? role),
+            role: raw.role ?? role,
             specialty: String(raw.specialty ?? specialty),
         }
         set((state) => ({ staff: [...state.staff, newMember] }))
@@ -105,7 +117,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     },
 
     removeStaff: async (username: string) => {
-        const res = await fetch(`/api/staff/${username}`, { method: "DELETE", headers: authHeaders() })
+        const res = await apiFetch(`/api/staff/${username}`, { method: "DELETE", headers: authHeaders() })
         if (!res.ok) {
             const data = await res.json().catch(() => ({}))
             throw new Error(data?.message || "Failed to remove staff member")
@@ -134,12 +146,11 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         }
         try {
             const date = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
-            const res = await fetch(`/api/assignments?date=${date}`, { headers: authHeaders() })
+            const res = await apiFetch(`/api/assignments?date=${date}`, { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) { set({ assignmentsLoading: false }); return }
 
             const assignees: StaffMember[] = data?.data?.members
-            console.log("[fetchAssignments] raw response:", JSON.stringify(assignees, null, 2))
             await wait()
             set({
                 assignedStaff: assignees,
@@ -156,7 +167,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         const usernames = members.map((m) => m.username)
         const date = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
         // POST to server first — only update state if it succeeds
-        const res = await fetch("/api/assignments", {
+        const res = await apiFetch("/api/assignments", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
             body: JSON.stringify({ date, staffUsernames: usernames, members }),
@@ -180,7 +191,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
 
     unassign: async (member) => {
         const date = new Date().toISOString().slice(0, 10)
-        const res = await fetch("/api/assignments", {
+        const res = await apiFetch("/api/assignments", {
             method: "DELETE",
             headers: { "Content-Type": "application/json", ...authHeaders() },
             body: JSON.stringify({ date, members: [member] }),

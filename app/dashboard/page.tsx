@@ -10,14 +10,9 @@ import {
 } from "recharts"
 import { JobEntry, StaffMember, StaffState, useStaffAssignmentStore } from "@/store/staffStore"
 import { useAuthStore } from "@/store/authStore"
+import { useJobTypesStore } from "@/store/jobTypesStore"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
-
-const serviceOptions = [
-    "Haircut & Blowout", "Hair Coloring", "Full Highlights", "Deep Conditioning",
-    "Manicure", "Pedicure", "Nail Art", "Eyebrow Threading", "Facial", "Lash Extensions",
-]
-
 
 const stats = [
     { label: "Today's Appointments", value: "12", change: "+3 from yesterday" },
@@ -31,21 +26,25 @@ export default function DashboardPage() {
     const todayStaff: StaffMember[] = useStaffAssignmentStore((s) => (s as unknown as { assignedStaff: StaffMember[] }).assignedStaff) ?? []
 
     const { _hasHydrated: authReady } = useAuthStore()
+    const { jobTypes, jobTypesLoading, fetchJobTypes } = useJobTypesStore()
+
+    const jobTypeOptions = jobTypes.map((t) => ({ label: t.value, value: t.key }))
 
     useEffect(() => {
         if (!authReady) return
         fetchAssignments()
+        fetchJobTypes()
     }, [authReady])
 
     // Modal state
-    const [modalMember, setModalMember] = useState<string | null>(null)
-    const [service, setService] = useState<string[]>([serviceOptions[0]])
+    const [modalMember, setModalMember] = useState<StaffMember | null>(null)
+    const [service, setService] = useState<string[]>([])
     const [price, setPrice] = useState("")
     const [description, setDescription] = useState("")
 
-    const openModal = (name: string) => {
-        setModalMember(name)
-        setService([serviceOptions[0]])
+    const openModal = (member: StaffMember) => {
+        setModalMember(member)
+        setService([])
         setPrice("")
         setDescription("")
     }
@@ -54,15 +53,20 @@ export default function DashboardPage() {
 
     const handleAddJob = () => {
         if (!modalMember || !price) return
+        const resolveLabel = (key: string) =>
+            jobTypes.find((t) => t.key === key)?.value ?? key
         const job = {
+            date: new Date().toISOString().slice(0, 10),
             service,
             price: parseFloat(price),
             description: description.trim() || undefined,
+            assignee: modalMember
         }
-        addJob(modalMember, job)
+        console.log(job)
+        // addJob(modalMember, job)
         closeModal()
         toast.success("Job added", {
-            description: `${(Array.isArray(service) ? service : [service]).join(" + ")} · $${parseFloat(price).toFixed(2)} for ${modalMember}`,
+            description: `${service.map(resolveLabel).join(" + ")} · $${parseFloat(price).toFixed(2)} for ${modalMember.name}`,
         })
     }
 
@@ -136,7 +140,7 @@ export default function DashboardPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold text-gray-900 truncate">{member.name}</p>
-                                                <p className="text-xs text-gray-400 truncate">{member.role}</p>
+                                                <p className="text-xs text-gray-400 truncate">{typeof member.role === "object" ? member.role?.name : member.role}</p>
                                             </div>
                                         </div>
 
@@ -155,7 +159,7 @@ export default function DashboardPage() {
 
                                         {/* Add Job button */}
                                         <button
-                                            onClick={() => openModal(member.username)}
+                                            onClick={() => openModal(member)}
                                             className="w-full flex items-center justify-center gap-1.5 text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-zinc-700 active:scale-95 transition"
                                         >
                                             <Plus size={12} /> Add Job
@@ -243,7 +247,7 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between mb-5">
                             <div>
                                 <h3 className="text-base font-semibold text-gray-900">Add Job</h3>
-                                <p className="text-xs text-gray-400 mt-0.5">{modalMember}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{modalMember.name}</p>
                             </div>
                             <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition">
                                 <X size={20} />
@@ -253,12 +257,17 @@ export default function DashboardPage() {
                         <div className="space-y-4">
                             {/* Service select */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1.5">Service</label>
+                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                                    Service
+                                    {jobTypesLoading && <span className="text-gray-400 text-[10px]">Loading…</span>}
+                                </label>
                                 <DropDown
                                     multiple
                                     value={service}
                                     onChange={setService}
-                                    options={serviceOptions}
+                                    options={jobTypeOptions}
+                                    placeholder={jobTypesLoading ? "Loading services…" : "Select services…"}
+                                    disabled={jobTypesLoading}
                                 />
                             </div>
 

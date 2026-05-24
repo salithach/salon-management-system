@@ -8,15 +8,11 @@ import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
 import SuccessScreen from "@/components/SuccessScreen"
+import { SALON_TYPES, SALON_TYPE_OPTIONS, resolveDescription } from "@/lib/constants"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
 
-const SALON_TYPES = [
-    "Hair Salon", "Barbershop", "Nail Salon", "Beauty Spa",
-    "Massage Studio", "Tanning Salon", "Waxing Studio",
-    "Full-Service Salon", "Bridal Studio", "Other",
-]
 
 const steps = [
     { label: "Account",  icon: Lock  },
@@ -106,7 +102,7 @@ export default function RegisterPage() {
             bullets={[
                 { label: "Username",    value: `@${account.username}` },
                 { label: "Email",       value: account.email },
-                { label: "Salon type",  value: salon.salonType },
+                { label: "Salon type",  value: resolveDescription(SALON_TYPES, salon.salonType) },
                 { label: "Location",    value: [location.city, location.state, location.country].filter(Boolean).join(", ") || "—" },
             ]}
             actions={[
@@ -292,7 +288,7 @@ export default function RegisterPage() {
                                 <div>
                                     <label className={labelCls}>Salon Type</label>
                                     <DropDown
-                                        options={SALON_TYPES}
+                                        options={SALON_TYPE_OPTIONS}
                                         value={salon.salonType}
                                         onChange={(v) => setSalon({ ...salon, salonType: v })}
                                         placeholder="Select a type…"
