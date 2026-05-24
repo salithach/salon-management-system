@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner"
 import { StaffMember, StaffState, useStaffAssignmentStore} from "@/store/staffStore"
 import {useAuthStore} from "@/store/authStore"
+import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 import {useJobRolesStore} from "@/store/jobRolesStore";
@@ -30,7 +31,22 @@ export default function StaffPage() {
     const {
         staff, staffLoading, error, fetchStaff, addStaff, removeStaff,
         assignedToday, assign, unassign, clear, fetchAssignments, assignmentsLoading,
-    } = useStaffAssignmentStore() as unknown as StaffState
+    } = useStaffAssignmentStore(
+        useShallow((s: StaffState) => ({
+            staff:              s.staff,
+            staffLoading:       s.staffLoading,
+            error:              s.error,
+            fetchStaff:         s.fetchStaff,
+            addStaff:           s.addStaff,
+            removeStaff:        s.removeStaff,
+            assignedToday:      s.assignedToday,
+            assign:             s.assign,
+            unassign:           s.unassign,
+            clear:              s.clear,
+            fetchAssignments:   s.fetchAssignments,
+            assignmentsLoading: s.assignmentsLoading,
+        }))
+    )
 
     const { fetchJobRoles, jobRoles, jobRolesLoading } = useJobRolesStore()
 
@@ -64,7 +80,7 @@ export default function StaffPage() {
     }
 
     const toggle = (username: string) => {
-        if (assignedToday.includes(username)) return
+        if (assignedToday.some((m) => m.username === username)) return
         setSelected((prev) =>
             prev.includes(username) ? prev.filter((u) => u !== username) : [...prev, username]
         )
@@ -72,7 +88,7 @@ export default function StaffPage() {
 
     const handleAssign = async () => {
         const selectedStaff = staff.filter((s) => selected.includes(s.username))
-        const newCount = selectedStaff.filter((m) => !assignedToday.includes(m.username)).length
+        const newCount = selectedStaff.filter((m) => !assignedToday.some((a) => a.username === m.username)).length
         try {
             await assign(selectedStaff)
             setSelected([])
@@ -197,7 +213,7 @@ export default function StaffPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {staff.map((member) => {
                     const isSelected = selected.includes(member.username)
-                    const isAssigned = assignedToday.includes(member.username)
+                    const isAssigned = assignedToday.some((m) => m.username === member.username)
                     return (
                         <div
                             key={member.id}

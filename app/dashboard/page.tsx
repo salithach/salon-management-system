@@ -8,9 +8,11 @@ import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
     PieChart, Pie, Cell
 } from "recharts"
-import { JobEntry, StaffMember, StaffState, useStaffAssignmentStore } from "@/store/staffStore"
+import { StaffMember, StaffState, useStaffAssignmentStore } from "@/store/staffStore"
 import { useAuthStore } from "@/store/authStore"
 import { useJobTypesStore } from "@/store/jobTypesStore"
+import { JobDetails, JobList, useJobStore } from "@/store/jobStore"
+import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 
@@ -22,18 +24,32 @@ const stats = [
 ]
 
 export default function DashboardPage() {
-    const { todayJobs, addJob, assignmentsLoading, fetchAssignments } = useStaffAssignmentStore() as unknown as StaffState
-    const todayStaff: StaffMember[] = useStaffAssignmentStore((s) => (s as unknown as { assignedStaff: StaffMember[] }).assignedStaff) ?? []
+    const { assignedToday, assignmentsLoading, fetchAssignments } = useStaffAssignmentStore(
+        useShallow((s: StaffState) => ({
+            assignedToday:      s.assignedToday,
+            assignmentsLoading: s.assignmentsLoading,
+            fetchAssignments:   s.fetchAssignments,
+        }))
+    )
+    const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady } = useAuthStore()
     const { jobTypes, jobTypesLoading, fetchJobTypes } = useJobTypesStore()
+    const { jobs, jobsLoading, fetchJobs, addJob } = useJobStore()
 
     const jobTypeOptions = jobTypes.map((t) => ({ label: t.value, value: t.key }))
+
+    // Build a per-username job map from the fetched JobList[]
+    const todayJobs = jobs.reduce<Record<string, JobDetails[]>>((acc, jl: JobList) => {
+        acc[jl.assignee] = [...(acc[jl.assignee] ?? []), ...(jl.jobs ?? [])]
+        return acc
+    }, {})
 
     useEffect(() => {
         if (!authReady) return
         fetchAssignments()
         fetchJobTypes()
+        fetchJobs()
     }, [authReady])
 
     // Modal state
@@ -41,6 +57,8 @@ export default function DashboardPage() {
     const [service, setService] = useState<string[]>([])
     const [price, setPrice] = useState("")
     const [description, setDescription] = useState("")
+
+    const [jobSaving, setJobSaving] = useState(false)
 
     const openModal = (member: StaffMember) => {
         setModalMember(member)
@@ -51,37 +69,35 @@ export default function DashboardPage() {
 
     const closeModal = () => setModalMember(null)
 
-    const handleAddJob = () => {
-        if (!modalMember || !price) return
-        const resolveLabel = (key: string) =>
-            jobTypes.find((t) => t.key === key)?.value ?? key
-        const job = {
-            date: new Date().toISOString().slice(0, 10),
-            service,
-            price: parseFloat(price),
-            description: description.trim() || undefined,
-            assignee: modalMember
+    const handleAddJob = async () => {
+        if (!modalMember || !price || service.length === 0) return
+        const resolveLabel = (key: string) => jobTypes.find((t) => t.key === key)?.value ?? key
+        setJobSaving(true)
+        try {
+            await addJob(modalMember, service, parseFloat(price), description.trim() || undefined)
+            await fetchJobs()
+            closeModal()
+            toast.success("Job added", {
+                description: `${service.map(resolveLabel).join(" + ")} · $${parseFloat(price).toFixed(2)} for ${modalMember.name}`,
+            })
+        } catch (err) {
+            toast.error((err as Error).message)
+        } finally {
+            setJobSaving(false)
         }
-        console.log(job)
-        // addJob(modalMember, job)
-        closeModal()
-        toast.success("Job added", {
-            description: `${service.map(resolveLabel).join(" + ")} · $${parseFloat(price).toFixed(2)} for ${modalMember.name}`,
-        })
     }
 
-    const getJobs = (name: string): JobEntry[] => todayJobs[name] ?? []
-    const getIncome = (name: string) => getJobs(name).reduce((s: number, j: JobEntry) => s + j.price, 0)
+    const getJobs = (username: string): JobDetails[] => todayJobs[username] ?? []
+    const getIncome = (username: string) => getJobs(username).reduce((s, j) => s + j.price, 0)
 
     // Compute service category counts from all today's jobs
     const SERVICE_COLORS = [
         "#27272a", "#3f3f46", "#52525b", "#71717a",
         "#a1a1aa", "#d4d4d8", "#18181b", "#09090b",
     ]
-    const allJobs: JobEntry[] = Object.values(todayJobs).flat()
-    const serviceCounts = allJobs.reduce<Record<string, number>>((acc, job: JobEntry) => {
-        const services = Array.isArray(job.service) ? job.service : [job.service]
-        services.forEach((s: string) => { acc[s] = (acc[s] ?? 0) + 1 })
+    const allJobs: JobDetails[] = Object.values(todayJobs).flat()
+    const serviceCounts = allJobs.reduce<Record<string, number>>((acc, job) => {
+        (job.services ?? []).forEach((s) => { acc[s] = (acc[s] ?? 0) + 1 })
         return acc
     }, {})
     const serviceChartData = Object.entries(serviceCounts)
@@ -90,7 +106,7 @@ export default function DashboardPage() {
 
     return (
         <>
-            {assignmentsLoading && <LoadingOverlay message="Loading dashboard…" />}
+            {(assignmentsLoading || jobsLoading) && <LoadingOverlay message="Loading dashboard…" />}
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 {stats.map((stat) => (
@@ -113,7 +129,7 @@ export default function DashboardPage() {
                         Manage <ChevronRight size={12} />
                     </Link>
                 </div>
-                {todayStaff.length === 0 ? (
+                {assignedStaff.length === 0 ? (
                     <div className="px-6 py-8 text-center">
                         <UserCheck size={28} className="mx-auto text-gray-200 mb-2" />
                         <p className="text-sm text-gray-400">No staff assigned for today</p>
@@ -125,7 +141,7 @@ export default function DashboardPage() {
                     <div className="p-4 sm:p-6 space-y-5">
                         {/* Staff cards grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {todayStaff.map((member) => {
+                            {assignedStaff.map((member) => {
                                 const jobs = getJobs(member.username)
                                 const income = getIncome(member.username)
                                 return (
@@ -175,14 +191,14 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-4">
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-gray-900">
-                                        {todayStaff.reduce((s, m) => s + getJobs(m.username).length, 0)}
+                                        {assignedStaff.reduce((s, m) => s + getJobs(m.username).length, 0)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
                                 </div>
                                 <div className="w-px h-6 bg-gray-200 shrink-0" />
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-gray-900">
-                                        {"$"}{todayStaff.reduce((s, m) => s + getIncome(m.username), 0).toFixed(0)}
+                                        {"$"}{assignedStaff.reduce((s, m) => s + getIncome(m.username), 0).toFixed(0)}
                                     </p>
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
                                 </div>
@@ -191,7 +207,7 @@ export default function DashboardPage() {
 
                         {/* Charts */}
                         {(() => {
-                            const chartData = todayStaff.map((m) => ({
+                            const chartData = assignedStaff.map((m) => ({
                                 name: m.username,
                                 Jobs: getJobs(m.username).length,
                                 Revenue: getIncome(m.username),
@@ -303,16 +319,17 @@ export default function DashboardPage() {
                         <div className="flex gap-3 mt-6">
                             <button
                                 onClick={closeModal}
-                                className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                                disabled={jobSaving}
+                                className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleAddJob}
-                                disabled={!price}
-                                className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={!price || service.length === 0 || jobSaving}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                Add Job
+                                {jobSaving ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : "Add Job"}
                             </button>
                         </div>
                     </div>

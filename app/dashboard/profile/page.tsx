@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Store, User, Lock, Trash2, MapPin, Globe, AtSign, Save, Pencil, X } from "lucide-react"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
-import { SALON_TYPES, SALON_TYPE_OPTIONS, resolveDescription } from "@/lib/constants"
+import { SALON_TYPES, SALON_TYPE_OPTIONS } from "@/lib/constants"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
