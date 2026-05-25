@@ -5,9 +5,7 @@ import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCi
 import { toast } from "sonner"
 import { useInventoryStore, InventoryItem } from "@/store/inventoryStore"
 import DropDown from "@/components/DropDown"
-
-const CATEGORIES = ["All", "Styling", "Coloring", "Hair Care", "Nail Care", "Skin Care", "Waxing", "Tools", "Cleaning", "Other"]
-const UNITS = ["pcs", "bottles", "tubes", "kg", "g", "ml", "L", "boxes", "rolls"]
+import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_OPTIONS, INVENTORY_UNIT_OPTIONS } from "@/lib/constants"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
@@ -19,13 +17,13 @@ function stockStatus(item: InventoryItem) {
 }
 
 type FormData = { name: string; category: string; quantity: string; unit: string; lowStockThreshold: string; notes: string }
-const emptyForm: FormData = { name: "", category: "Styling", quantity: "", unit: "pcs", lowStockThreshold: "3", notes: "" }
+const emptyForm: FormData = { name: "", category: "STYLING", quantity: "", unit: "pcs", lowStockThreshold: "3", notes: "" }
 
 export default function InventoryPage() {
     const { items, _hasHydrated, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
 
     const [search, setSearch] = useState("")
-    const [categoryFilter, setCategoryFilter] = useState("All")
+    const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [modal, setModal] = useState<"add" | "edit" | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [form, setForm] = useState<FormData>(emptyForm)
@@ -39,7 +37,7 @@ export default function InventoryPage() {
 
     const filtered = items.filter((item) => {
         const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-        const matchCat = categoryFilter === "All" || item.category === categoryFilter
+        const matchCat = categoryFilter === "ALL" || item.category === categoryFilter
         return matchSearch && matchCat
     })
 
@@ -130,17 +128,17 @@ export default function InventoryPage() {
 
                 {/* Category filter */}
                 <div className="flex items-center gap-2 flex-wrap">
-                    {CATEGORIES.map((c) => (
+                    {INVENTORY_CATEGORIES.map((c) => (
                         <button
-                            key={c}
-                            onClick={() => setCategoryFilter(c)}
+                            key={c.code}
+                            onClick={() => setCategoryFilter(c.code)}
                             className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                                categoryFilter === c
+                                categoryFilter === c.code
                                     ? "bg-zinc-800 text-white border-zinc-800"
                                     : "border-gray-200 text-gray-600 hover:border-gray-400"
                             }`}
                         >
-                            {c}
+                            {c.description}
                         </button>
                     ))}
                 </div>
@@ -267,7 +265,7 @@ export default function InventoryPage() {
                                 <div>
                                     <label className={labelCls}>Category</label>
                                     <DropDown
-                                        options={CATEGORIES.filter(c => c !== "All")}
+                                        options={INVENTORY_CATEGORY_OPTIONS}
                                         value={form.category}
                                         onChange={(v) => setForm({ ...form, category: v })}
                                     />
@@ -275,7 +273,7 @@ export default function InventoryPage() {
                                 <div>
                                     <label className={labelCls}>Unit</label>
                                     <DropDown
-                                        options={UNITS}
+                                        options={INVENTORY_UNIT_OPTIONS}
                                         value={form.unit}
                                         onChange={(v) => setForm({ ...form, unit: v })}
                                     />
