@@ -61,6 +61,7 @@ export default function StaffPage() {
     const [formSaving, setFormSaving] = useState(false)
     const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
     const [confirmUnassign, setConfirmUnassign] = useState<StaffMember | null>(null)
+    const [confirmReset, setConfirmReset] = useState(false)
 
     // Fetch staff list + today's assignments from backend on load
     useEffect(() => {
@@ -80,7 +81,7 @@ export default function StaffPage() {
     }
 
     const toggle = (username: string) => {
-        if (assignedToday.some((m) => m.username === username)) return
+        if ((assignedToday ?? []).some((m) => m.username === username)) return
         setSelected((prev) =>
             prev.includes(username) ? prev.filter((u) => u !== username) : [...prev, username]
         )
@@ -88,7 +89,7 @@ export default function StaffPage() {
 
     const handleAssign = async () => {
         const selectedStaff = staff.filter((s) => selected.includes(s.username))
-        const newCount = selectedStaff.filter((m) => !assignedToday.some((a) => a.username === m.username)).length
+        const newCount = selectedStaff.filter((m) => !(assignedToday ?? []).some((a) => a.username === m.username)).length
         try {
             await assign(selectedStaff)
             setSelected([])
@@ -98,10 +99,14 @@ export default function StaffPage() {
         }
     }
 
-    const handleClear = () => {
-        clear()
-        setSelected([])
-        toast.success("Today's assignments reset")
+    const handleClear = async () => {
+        try {
+            await clear()
+            setSelected([])
+            toast.success("Today's assignments reset")
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
     }
 
     const handleRemoveStaff = async (username: string) => {
@@ -150,7 +155,7 @@ export default function StaffPage() {
                 specialty: form.specialty.trim(),
             })
             setShowAddModal(false)
-            toast.success(`${newMember.name} added to staff`)
+            toast.success(`${newMember} added to staff`)
         } catch (err) {
             setFormErrors([(err as Error).message])
         } finally {
@@ -177,31 +182,15 @@ export default function StaffPage() {
                 </button>
             </div>
 
-            {/* Stats */}
-            {/*<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">*/}
-            {/*    {[*/}
-            {/*        { label: "Total Staff", value: String(staff.length) },*/}
-            {/*        { label: "Assigned Today", value: String(assignedToday.length) },*/}
-            {/*        { label: "Avg. Rating", value: staff.length*/}
-            {/*            ? (staff.reduce((sum, s) => sum + (parseFloat(s.rating) || 0), 0) / staff.filter(s => parseFloat(s.rating) > 0).length || 0).toFixed(2)*/}
-            {/*            : "—" },*/}
-            {/*    ].map((s) => (*/}
-            {/*        <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">*/}
-            {/*            <p className="text-xs text-gray-500 mb-1">{s.label}</p>*/}
-            {/*            <p className="text-3xl font-bold text-gray-900">{s.value}</p>*/}
-            {/*        </div>*/}
-            {/*    ))}*/}
-            {/*</div>*/}
-
-            {/* Reset banner */}
-            {assignedToday.length > 0 && (
+            {/*Reset banner */}
+            {assignedToday && assignedToday.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center justify-between gap-4">
                     <p className="text-xs text-gray-500">
                         <span className="font-medium text-gray-900">{assignedToday.length}</span> staff assigned today.
                         Already-assigned staff cannot be re-selected.
                     </p>
                     <button
-                        onClick={handleClear}
+                        onClick={() => setConfirmReset(true)}
                         className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 px-3 py-1.5 rounded-lg transition shrink-0"
                     >
                         <RotateCcw size={11} /> Reset Today
@@ -213,7 +202,7 @@ export default function StaffPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {staff.map((member) => {
                     const isSelected = selected.includes(member.username)
-                    const isAssigned = assignedToday.some((m) => m.username === member.username)
+                    const isAssigned = (assignedToday ?? []).some((m) => m.username === member.username)
                     return (
                         <div
                             key={member.id}
@@ -332,7 +321,7 @@ export default function StaffPage() {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => { handleRemoveStaff(confirmRemove); setConfirmRemove(null) }}
+                                onClick={() => { handleRemoveStaff(confirmRemove).then(() => {}); setConfirmRemove(null) }}
                                 className="flex items-center gap-2 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
                             >
                                 <Trash2 size={13} /> Remove
@@ -502,6 +491,47 @@ export default function StaffPage() {
                             >
                                 {formSaving ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
                                 {formSaving ? "Adding…" : "Add Staff"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirm Reset Today Modal */}
+            {confirmReset && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmReset(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <RotateCcw size={17} className="text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900">Reset Today&apos;s Assignments</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">This cannot be undone</p>
+                            </div>
+                        </div>
+                        <div className="h-px bg-gray-100" />
+                        <p className="text-sm text-gray-600">
+                            Are you sure you want to remove all{" "}
+                            <span className="font-semibold text-gray-900">{(assignedToday ?? []).length} assigned</span>{" "}
+                            staff members from today&apos;s schedule?
+                        </p>
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                                onClick={() => setConfirmReset(false)}
+                                className="text-sm text-gray-600 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setConfirmReset(false)
+                                    await handleClear()
+                                }}
+                                className="flex items-center gap-2 text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                            >
+                                <RotateCcw size={13} /> Reset Today
                             </button>
                         </div>
                     </div>

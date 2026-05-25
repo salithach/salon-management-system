@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            const raw = data?.message
+            const raw = data?.errors[0]?.message
             const message =
                 (typeof raw === "object" ? raw?.message : raw) ||
                 data?.errors?.[0] ||
@@ -83,7 +83,7 @@ export async function DELETE(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            const raw = data?.message
+            const raw = data?.errors[0]?.message
             const message =
                 (typeof raw === "object" ? raw?.message : raw) ||
                 data?.errors?.[0] ||

@@ -50,17 +50,17 @@ export type StaffState = {
     staffLoading: boolean
     error: string | null
     fetchStaff: () => Promise<void>
-    addStaff: (data: { name: string; username: string; email: string; phone: string; address: string; role: Role; specialty: string }) => Promise<void>
+    addStaff: (data: { name: string; username: string; email: string; phone: string; address: string; role: Role; specialty: string }) => Promise<StaffMember>
     removeStaff: (username: string) => Promise<void>
 
     // ── Today's assignments ───────────────────────────────────
+    assignmentId: string | null    // ID of today's assignment record
     assignedToday: StaffMember[]   // keyed by username
     assignmentsLoading: boolean
-    todayJobs: Record<string, JobEntry[]>
     fetchAssignments: () => Promise<void>
     assign: (members: StaffMember[]) => Promise<void>
     unassign: (member: StaffMember) => Promise<void>
-    clear: () => void
+    clear: () => Promise<void>
 }
 
 export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
@@ -68,9 +68,9 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     staffLoading: false,
     error: null,
 
+    assignmentId: null,
     assignedToday: [],
     assignmentsLoading: false,
-    todayJobs: {},
 
     fetchStaff: async () => {
         if (get().staffLoading) return
@@ -94,8 +94,10 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
             body: JSON.stringify({ name, username, email, phone, address, role, specialty, status: "Available" }),
         })
         const data = await res.json()
+        const newMember = data?.data
         if (!res.ok) throw new Error(data?.error?.message || "Failed to add staff member")
-        set((state) => ({ staff: [...state.staff, data?.data] }))
+        set((state) => ({ staff: [...state.staff, newMember] }))
+        return newMember
     },
 
     removeStaff: async (username: string) => {
@@ -118,9 +120,9 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
             const res = await apiFetch(`/api/assignments?date=${date}`, { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) { set({ assignmentsLoading: false }); return }
-            const assignment: Assignment = data?.data || [];
+            const assignment: Assignment | null = data?.data ?? null
             await wait()
-            set({ assignedToday: assignment.members, assignmentsLoading: false })
+            set({ assignmentId: assignment?.id ?? null, assignedToday: assignment?.members ?? [], assignmentsLoading: false })
         } catch (err) {
             await wait()
             set({ error: (err as Error).message, assignmentsLoading: false })
@@ -138,10 +140,13 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
             const data = await res.json().catch(() => ({}))
             throw new Error(data?.message || "Failed to assign staff")
         }
+        const data = await res.json().catch(() => ({}))
+        const assignment: Assignment = data?.data
         set((state) => ({
+            assignmentId: assignment?.id ?? state.assignmentId,
             assignedToday: [
-                ...state.assignedToday,
-                ...members.filter((m) => !state.assignedToday.some((a) => a.username === m.username)),
+                ...(state.assignedToday ?? []),
+                ...members.filter((m) => !(state.assignedToday ?? []).some((a) => a.username === m.username)),
             ],
         }))
     },
@@ -162,7 +167,20 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         }))
     },
 
-    clear: () => set({ assignedToday: [], todayJobs: {} }),
+    clear: async () => {
+        const { assignmentId } = get()
+        if (assignmentId) {
+            const res = await apiFetch(`/api/assignments/${assignmentId}`, {
+                method: "DELETE",
+                headers: authHeaders(),
+            })
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}))
+                throw new Error(data?.message || "Failed to reset today's assignments")
+            }
+        }
+        set({ assignedToday: [], assignmentId: null })
+    },
 }))
 
 

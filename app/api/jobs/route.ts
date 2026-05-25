@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
         })
         const data = await res.json()
         if (!res.ok) {
-            const raw = data?.message
+            const raw = data?.errors[0]?.message
             const message = (typeof raw === "object" ? raw?.message : raw) || data?.errors?.[0] || "Failed to fetch jobs"
             return NextResponse.json({ message }, { status: res.status })
         }
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         })
         const data = await res.json()
         if (!res.ok) {
-            const raw = data?.message
+            const raw = data?.data?.message
             const message = (typeof raw === "object" ? raw?.message : raw) || data?.errors?.[0] || "Failed to add job"
             return NextResponse.json({ message }, { status: res.status })
         }
