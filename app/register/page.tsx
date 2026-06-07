@@ -8,7 +8,8 @@ import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
 import SuccessScreen from "@/components/SuccessScreen"
-import { SALON_TYPES, SALON_TYPE_OPTIONS, resolveDescription } from "@/lib/constants"
+import { SALON_TYPES, resolveDescription } from "@/lib/constants"
+import { useSalonStore } from "@/store/salonStore"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
@@ -23,20 +24,25 @@ const steps = [
 
 export default function RegisterPage() {
     const { register, loading, error, token, _hasHydrated } = useAuthStore()
+    const { salonTypeOptions, salonTypesLoading, fetchSalonTypes } = useSalonStore()
     const router = useRouter()
     const [step, setStep] = useState(0)
     const [done, setDone] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
 
+    useEffect(() => {
+        fetchSalonTypes().then(() => {})
+    }, [fetchSalonTypes])
+
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
+    const [account, setAccount] = useState({ username: "fdf", email: "", password: "", confirm: "" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
+    const [owner, setOwner] = useState({ name: "fdfdf", phoneNumber: "" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "" })
+    const [salon, setSalon] = useState({ salonName: "fdfd", salonType: "", website: "" })
 
     // Step 4 — location
     const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
@@ -48,6 +54,13 @@ export default function RegisterPage() {
     }, [_hasHydrated, token, router])
 
     if (!_hasHydrated || token) return null
+
+    // Resolve the human-readable label for the selected salon type
+    const resolveSalonTypeLabel = (code: string): string => {
+        const match = salonTypeOptions.find((o) => (typeof o === "object" ? o.value : o) === code)
+        if (match) return typeof match === "object" ? match.label : match
+        return resolveDescription(SALON_TYPES, code)
+    }
 
     const validate = (): boolean => {
         const errs: string[] = []
@@ -102,7 +115,7 @@ export default function RegisterPage() {
             bullets={[
                 { label: "Username",    value: `@${account.username}` },
                 { label: "Email",       value: account.email },
-                { label: "Salon type",  value: resolveDescription(SALON_TYPES, salon.salonType) },
+                { label: "Salon type",  value: resolveSalonTypeLabel(salon.salonType) },
                 { label: "Location",    value: [location.city, location.state, location.country].filter(Boolean).join(", ") || "—" },
             ]}
             actions={[
@@ -288,10 +301,11 @@ export default function RegisterPage() {
                                 <div>
                                     <label className={labelCls}>Salon Type</label>
                                     <DropDown
-                                        options={SALON_TYPE_OPTIONS}
+                                        options={salonTypeOptions}
                                         value={salon.salonType}
                                         onChange={(v) => setSalon({ ...salon, salonType: v })}
-                                        placeholder="Select a type…"
+                                        placeholder={salonTypesLoading ? "Loading types…" : "Select a type…"}
+                                        disabled={salonTypesLoading}
                                     />
                                 </div>
                                 <div>

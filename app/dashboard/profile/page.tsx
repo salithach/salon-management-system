@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Store, User, Lock, Trash2, MapPin, Globe, AtSign, Save, Pencil, X } from "lucide-react"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
-import { SALON_TYPES, SALON_TYPE_OPTIONS } from "@/lib/constants"
+import { useSalonStore } from "@/store/salonStore"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
@@ -23,6 +23,11 @@ function ReadField({ label, value }: { label: string; value: string }) {
 
 export default function ProfilePage() {
     const { user } = useAuthStore()
+    const { salonTypeOptions, salonTypesLoading, fetchSalonTypes } = useSalonStore()
+
+    useEffect(() => {
+        fetchSalonTypes()
+    }, [fetchSalonTypes])
     const role = user?.roles?.[0] ?? "User"
     const initial = role[0]?.toUpperCase() ?? "U"
 
@@ -143,10 +148,11 @@ export default function ProfilePage() {
                             <div>
                                 <label className={labelCls}>Salon Type</label>
                                 <DropDown
-                                    options={SALON_TYPE_OPTIONS}
+                                    options={salonTypeOptions}
                                     value={salonDraft.salonType}
                                     onChange={(v) => setSalonDraft({ ...salonDraft, salonType: v })}
-                                    placeholder="Select a type…"
+                                    placeholder={salonTypesLoading ? "Loading types…" : "Select a type…"}
+                                    disabled={salonTypesLoading}
                                 />
                             </div>
                             <div>
@@ -195,7 +201,10 @@ export default function ProfilePage() {
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <ReadField label="Salon Name" value={salonForm.salonName} />
-                            <ReadField label="Salon Type" value={SALON_TYPES.find((t) => t.code === salonForm.salonType)?.description ?? salonForm.salonType} />
+                            <ReadField label="Salon Type" value={
+                                (salonTypeOptions.find((o) => (typeof o === "object" ? o.value : o) === salonForm.salonType) as { label: string } | undefined)?.label
+                                ?? salonForm.salonType
+                            } />
                             <ReadField label="Username" value={`@${salonForm.username}`} />
                             <ReadField label="Website" value={salonForm.website} />
                         </div>
