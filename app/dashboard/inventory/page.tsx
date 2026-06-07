@@ -7,6 +7,11 @@ import { useInventoryStore, InventoryItem } from "@/store/inventoryStore"
 import DropDown from "@/components/DropDown"
 import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_OPTIONS, INVENTORY_UNIT_OPTIONS } from "@/lib/constants"
 
+// ─── Feature flag ────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const COMING_SOON = true
+// ─────────────────────────────────────────────────────────────────────────────
+
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
 const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
 
@@ -28,6 +33,25 @@ export default function InventoryPage() {
     const [editingId, setEditingId] = useState<string | null>(null)
     const [form, setForm] = useState<FormData>(emptyForm)
     const [formError, setFormError] = useState("")
+
+    // ── Feature flag: show Coming Soon instead of actual content ──────────────
+    if (COMING_SOON) return (
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                <Package size={28} className="text-zinc-400" />
+            </div>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900">Inventory — Coming Soon</h2>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                    Full inventory management with stock tracking, low-stock alerts and supplier notes is on its way.
+                </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                In Development
+            </span>
+        </div>
+    )
+
 
     if (!_hasHydrated) return (
         <div className="flex items-center justify-center h-48 text-gray-400 gap-2">

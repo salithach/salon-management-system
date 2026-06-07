@@ -79,7 +79,7 @@ export const useMetadataStore = create<MetadataState>()(
 
             addJobType: async (entry: JobType) => {
                 // POST to backend first — only update local state/localStorage on success
-                const res = await apiFetch("/api/jobTypes", {
+                const res = await apiFetch("/api/metadata/jobs/types", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", ...authHeaders() },
                     body: JSON.stringify([entry]),

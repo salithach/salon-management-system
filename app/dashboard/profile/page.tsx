@@ -22,7 +22,7 @@ function ReadField({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfilePage() {
-    const { user, fetchProfile } = useAuthStore()
+    const { user, fetchProfile, profileLoading } = useAuthStore()
     const { salonTypeOptions, salonTypesLoading, fetchSalonTypes } = useSalonStore()
 
     useEffect(() => { fetchSalonTypes() }, [fetchSalonTypes])
@@ -102,6 +102,34 @@ export default function ProfilePage() {
     const [deleteConfirmText, setDeleteConfirmText] = useState("")
 
     const [passwordError, setPasswordError] = useState("")
+
+    if (profileLoading) return (
+        <div className="max-w-3xl mx-auto space-y-6 animate-pulse">
+            {/* Header skeleton */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
+                <div className="w-16 h-16 rounded-full bg-gray-200 shrink-0" />
+                <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-40" />
+                    <div className="h-3 bg-gray-200 rounded w-56" />
+                    <div className="h-5 bg-gray-200 rounded-full w-20" />
+                </div>
+            </div>
+            {/* Cards skeleton */}
+            {[1, 2].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
+                    <div className="h-4 bg-gray-200 rounded w-32" />
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1,2,3,4].map((j) => (
+                            <div key={j} className="space-y-1.5">
+                                <div className="h-3 bg-gray-200 rounded w-20" />
+                                <div className="h-4 bg-gray-200 rounded w-36" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">

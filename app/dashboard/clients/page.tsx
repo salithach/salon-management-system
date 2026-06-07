@@ -1,3 +1,9 @@
+import { Users } from "lucide-react"
+
+// ─── Feature flag ────────────────────────────────────────────────────────────
+const COMING_SOON = true
+// ─────────────────────────────────────────────────────────────────────────────
+
 const clients = [
     { name: "Emma Johnson", email: "emma@example.com", phone: "555-0101", visits: 12, lastVisit: "Apr 28, 2026", spent: "$840" },
     { name: "Olivia Smith", email: "olivia@example.com", phone: "555-0102", visits: 8, lastVisit: "May 1, 2026", spent: "$560" },
@@ -10,6 +16,23 @@ const clients = [
 ]
 
 export default function ClientsPage() {
+    if (COMING_SOON) return (
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                <Users size={28} className="text-zinc-400" />
+            </div>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900">Clients — Coming Soon</h2>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                    Full client management with visit history, spending tracking and contact details is on its way.
+                </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                In Development
+            </span>
+        </div>
+    )
+
     return (
         <>
             {/* Stats */}

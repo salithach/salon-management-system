@@ -15,6 +15,7 @@ type AuthState = {
     user: AuthUser | null
     token: string | null
     loading: boolean
+    profileLoading: boolean
     error: string | null
     _hasHydrated: boolean
     login: (username: string, password: string) => Promise<boolean>
@@ -37,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             token: null,
             loading: false,
+            profileLoading: false,
             error: null,
             _hasHydrated: false,
             setHasHydrated: (value) => set({ _hasHydrated: value }),
@@ -71,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
             fetchProfile: async () => {
                 const token = get().token
                 if (!token) return
+                set({ profileLoading: true })
                 try {
                     const res = await fetch("/api/users/me", {
                         headers: {
@@ -82,7 +85,9 @@ export const useAuthStore = create<AuthState>()(
                     const data = await res.json()
                     const raw = data?.data ?? data
                     set({ user: sanitize(raw) })
-                } catch { /* silently ignore */ }
+                } catch { /* silently ignore */ } finally {
+                    set({ profileLoading: false })
+                }
             },
 
             register: async (formData: Record<string, unknown>) => {

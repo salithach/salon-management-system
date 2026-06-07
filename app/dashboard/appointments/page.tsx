@@ -1,3 +1,9 @@
+import { CalendarDays } from "lucide-react"
+
+// ─── Feature flag ────────────────────────────────────────────────────────────
+const COMING_SOON = true
+// ─────────────────────────────────────────────────────────────────────────────
+
 const allAppointments = [
     { date: "Today", time: "09:00 AM", client: "Emma Johnson", service: "Hair Coloring", stylist: "Mia Chen", status: "Confirmed" },
     { date: "Today", time: "10:30 AM", client: "Olivia Smith", service: "Haircut & Blowout", stylist: "Lena Park", status: "Confirmed" },
@@ -17,6 +23,23 @@ const statusColor: Record<string, string> = {
 }
 
 export default function AppointmentsPage() {
+    if (COMING_SOON) return (
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                <CalendarDays size={28} className="text-zinc-400" />
+            </div>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900">Appointments — Coming Soon</h2>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                    Full appointment scheduling with calendar view, booking management and reminders is on its way.
+                </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                In Development
+            </span>
+        </div>
+    )
+
     return (
         <>
             {/* Summary cards */}
