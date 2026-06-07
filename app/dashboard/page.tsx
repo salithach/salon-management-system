@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, Scissors, BarChart3, UserCheck, ChevronRight, Plus, X } from "lucide-react"
+import { Users, Scissors, BarChart3, UserCheck, ChevronRight, Plus, X, CalendarDays, Briefcase, DollarSign } from "lucide-react"
 import { toast } from "sonner"
 import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -16,12 +16,6 @@ import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 
-const stats = [
-    { label: "Today's Appointments", value: "12", change: "+3 from yesterday" },
-    { label: "Total Clients", value: "348", change: "+8 this week" },
-    { label: "Monthly Revenue", value: "$6,420", change: "+12% vs last month" },
-    { label: "Pending Bookings", value: "5", change: "Needs confirmation" },
-]
 
 export default function DashboardPage() {
     const { assignedToday, assignmentsLoading, fetchAssignments } = useStaffAssignmentStore(
@@ -108,13 +102,53 @@ export default function DashboardPage() {
             {(assignmentsLoading || jobsLoading) && <LoadingOverlay message="Loading dashboard…" />}
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                {stats.map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                        <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
-                        <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                        <p className="text-xs text-gray-400 mt-1">{stat.change}</p>
+                {/* Today's Staff */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 font-semibold">Today&apos;s Staff</p>
+                        <UserCheck size={15} className="text-gray-300" />
                     </div>
-                ))}
+                    <p className="text-3xl font-bold text-gray-900">{assignedStaff.length}</p>
+                    <p className="text-xs text-gray-500">
+                        {assignedStaff.length === 0 ? "No staff assigned yet" : `${assignedStaff.length} member${assignedStaff.length !== 1 ? "s" : ""} on duty`}
+                    </p>
+                </div>
+
+                {/* Today's Jobs */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 font-semibold">Today&apos;s Jobs</p>
+                        <Briefcase size={15} className="text-gray-300" />
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">{allJobs.length}</p>
+                    <p className="text-xs text-gray-500">
+                        {allJobs.length === 0 ? "No jobs logged yet" : `Across ${assignedStaff.length} staff member${assignedStaff.length !== 1 ? "s" : ""}`}
+                    </p>
+                </div>
+
+                {/* Today's Income */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 font-semibold">Today&apos;s Income</p>
+                        <DollarSign size={15} className="text-gray-300" />
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">
+                        ${allJobs.reduce((sum, j) => sum + j.price, 0).toFixed(2)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                        {allJobs.length === 0 ? "No revenue yet today" : `From ${allJobs.length} job${allJobs.length !== 1 ? "s" : ""}`}
+                    </p>
+                </div>
+
+                {/* Today's Appointments */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 font-semibold">Today&apos;s Appointments</p>
+                        <CalendarDays size={15} className="text-gray-300" />
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900">—</p>
+                    <p className="text-xs text-gray-500">Coming soon</p>
+                </div>
             </div>
 
             {/* Today's Staff */}
@@ -182,26 +216,6 @@ export default function DashboardPage() {
                                     </div>
                                 )
                             })}
-                        </div>
-
-                        {/* Totals row */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 bg-gray-50 rounded-xl">
-                            <p className="text-xs text-gray-500 font-medium mr-auto">Today&apos;s totals</p>
-                            <div className="flex items-center gap-4">
-                                <div className="text-center">
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {assignedStaff.reduce((s, m) => s + getJobs(m.username).length, 0)}
-                                    </p>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jobs</p>
-                                </div>
-                                <div className="w-px h-6 bg-gray-200 shrink-0" />
-                                <div className="text-center">
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {"$"}{assignedStaff.reduce((s, m) => s + getIncome(m.username), 0).toFixed(0)}
-                                    </p>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Charts */}

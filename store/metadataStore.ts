@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore"
 export type JobType = {
     key: string
     value: string
+    category?: string
 }
 
 export type JobRole = {
@@ -20,6 +21,7 @@ type MetadataState = {
     error: string | null
     hasFetched: boolean
     fetchMetadata: (options?: { force?: boolean }) => Promise<void>
+    addJobType: (entry: JobType) => Promise<void>
     clearMetadata: () => void
 }
 
@@ -28,11 +30,15 @@ const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-const toSafeArray = (value: unknown): Array<{ key: string; value: string }> => {
+const toSafeArray = (value: unknown): JobType[] => {
     if (!Array.isArray(value)) return []
-    return value.filter((item): item is { key: string; value: string } => {
+    return value.filter((item): item is JobType => {
         return typeof item === "object" && item !== null && "key" in item && "value" in item
-    })
+    }).map((item) => ({
+        key: item.key,
+        value: item.value,
+        ...(item.category ? { category: item.category } : {}),
+    }))
 }
 
 export const useMetadataStore = create<MetadataState>()(
@@ -65,19 +71,34 @@ export const useMetadataStore = create<MetadataState>()(
                     const jobTypes = toSafeArray(payload?.jobTypes)
                     const jobRoles = toSafeArray(payload?.jobRoles)
 
-                    set({
-                        jobTypes,
-                        jobRoles,
-                        metadataLoading: false,
-                        error: null,
-                        hasFetched: true,
-                    })
+                    set({ jobTypes, jobRoles, metadataLoading: false, error: null, hasFetched: true })
                 } catch (err) {
-                    set({
-                        error: (err as Error).message,
-                        metadataLoading: false,
-                    })
+                    set({ error: (err as Error).message, metadataLoading: false })
                 }
+            },
+
+            addJobType: async (entry: JobType) => {
+                // POST to backend first — only update local state/localStorage on success
+                const res = await apiFetch("/api/jobTypes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...authHeaders() },
+                    body: JSON.stringify([entry]),
+                })
+
+                const data = await res.json().catch(() => ({}))
+
+                if (!res.ok) {
+                    const msg =
+                        data?.message ||
+                        data?.errors?.[0]?.message ||
+                        "Failed to add service"
+                    throw new Error(msg)
+                }
+
+                // Only reached if backend succeeded — persist middleware auto-saves to localStorage
+                set((state) => ({
+                    jobTypes: [...state.jobTypes, entry],
+                }))
             },
 
             clearMetadata: () => {
@@ -99,4 +120,3 @@ export const useMetadataStore = create<MetadataState>()(
         }
     )
 )
-
