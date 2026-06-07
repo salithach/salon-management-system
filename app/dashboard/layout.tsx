@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore } from "@/store/authStore"
+import { useMetadataStore } from "@/store/metadataStore"
 import {
     LayoutDashboard, CalendarDays, Users, Scissors,
     UserCheck, BarChart3, LogOut, ChevronRight, Menu, X, Package
@@ -89,6 +90,7 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, token, logout, _hasHydrated } = useAuthStore()
+    const { fetchMetadata } = useMetadataStore()
     const router = useRouter()
     const pathname = usePathname()
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -96,6 +98,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     useEffect(() => {
         if (_hasHydrated && !token) router.replace("/login")
     }, [_hasHydrated, token, router])
+
+    // Fetch metadata (jobTypes + jobRoles) once when the dashboard loads
+    useEffect(() => {
+        if (_hasHydrated && token) {
+            fetchMetadata()
+        }
+    }, [_hasHydrated, token, fetchMetadata])
 
     if (!_hasHydrated || !token) return null
 

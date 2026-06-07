@@ -10,7 +10,7 @@ import {
 } from "recharts"
 import { StaffMember, StaffState, useStaffAssignmentStore } from "@/store/staffStore"
 import { useAuthStore } from "@/store/authStore"
-import { useJobTypesStore } from "@/store/jobTypesStore"
+import { useMetadataStore } from "@/store/metadataStore"
 import { JobDetails, JobList, useJobStore } from "@/store/jobStore"
 import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
@@ -34,7 +34,7 @@ export default function DashboardPage() {
     const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady } = useAuthStore()
-    const { jobTypes, jobTypesLoading, fetchJobTypes } = useJobTypesStore()
+    const { jobTypes, metadataLoading: jobTypesLoading } = useMetadataStore()
     const { jobs, jobsLoading, fetchJobs, addJob } = useJobStore()
 
     const jobTypeOptions = jobTypes.map((t) => ({ label: t.value, value: t.key }))
@@ -48,7 +48,6 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!authReady) return
         fetchAssignments()
-        fetchJobTypes()
         fetchJobs()
     }, [authReady])
 

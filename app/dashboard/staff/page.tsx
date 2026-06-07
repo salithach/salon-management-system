@@ -23,7 +23,7 @@ import {useAuthStore} from "@/store/authStore"
 import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
-import {useJobRolesStore} from "@/store/jobRolesStore";
+import { useMetadataStore } from "@/store/metadataStore"
 
 const emptyForm = {name: "", username: "", email: "", phone: "", address: "", role: "", specialty: ""}
 
@@ -48,7 +48,7 @@ export default function StaffPage() {
         }))
     )
 
-    const { fetchJobRoles, jobRoles, jobRolesLoading } = useJobRolesStore()
+    const { jobRoles, metadataLoading } = useMetadataStore()
 
     const roleOptions = jobRoles.map((role) => ({ label: role.value, value: role.key }))
 
@@ -64,12 +64,12 @@ export default function StaffPage() {
     const [confirmReset, setConfirmReset] = useState(false)
 
     // Fetch staff list + today's assignments from backend on load
+    // Metadata (jobTypes/jobRoles) is fetched once by the dashboard layout
     useEffect(() => {
         if (!authReady) return
         fetchStaff().then(() => {})
         fetchAssignments().then(() => {})
-        fetchJobRoles().then(() => {})
-    }, [authReady, fetchAssignments, fetchJobRoles, fetchStaff])
+    }, [authReady, fetchAssignments, fetchStaff])
 
 
     if (error) {
@@ -124,10 +124,6 @@ export default function StaffPage() {
         setForm(emptyForm)
         setFormErrors([])
         setShowAddModal(true)
-        // Refetch roles if they haven't loaded yet
-        if (jobRoles.length === 0 && !jobRolesLoading) {
-            fetchJobRoles().then(() => {})
-        }
     }
 
     const handleAddStaff = async () => {
@@ -168,7 +164,7 @@ export default function StaffPage() {
 
     return (
         <>
-            {(staffLoading || assignmentsLoading || jobRolesLoading) && <LoadingOverlay message="Loading staff…" />}
+            {(staffLoading || assignmentsLoading || metadataLoading) && <LoadingOverlay message="Loading staff…" />}
             {/* Page header */}
             <div className="flex items-center justify-between gap-4">
                 <div>
@@ -453,14 +449,14 @@ export default function StaffPage() {
                             <div>
                                 <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
                                     Role <span className="text-red-400">*</span>
-                                    {jobRolesLoading && <Loader2 size={11} className="animate-spin text-gray-400" />}
+                                    {metadataLoading && <Loader2 size={11} className="animate-spin text-gray-400" />}
                                 </label>
                                 <DropDown
                                     options={roleOptions}
                                     value={form.role}
                                     onChange={(v) => setForm({ ...form, role: v })}
-                                    placeholder={jobRolesLoading ? "Loading roles…" : roleOptions.length === 0 ? "No roles available" : "Select a role…"}
-                                    disabled={jobRolesLoading}
+                                    placeholder={metadataLoading ? "Loading roles…" : roleOptions.length === 0 ? "No roles available" : "Select a role…"}
+                                    disabled={metadataLoading}
                                 />
                             </div>
                             <div>
