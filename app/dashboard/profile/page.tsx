@@ -22,56 +22,59 @@ function ReadField({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfilePage() {
-    const { user } = useAuthStore()
+    const { user, fetchProfile } = useAuthStore()
     const { salonTypeOptions, salonTypesLoading, fetchSalonTypes } = useSalonStore()
 
-    useEffect(() => {
-        fetchSalonTypes()
-    }, [fetchSalonTypes])
-    const role = user?.roles?.[0]?.name ?? "User"
-    const initial = role[0]?.toUpperCase() ?? "U"
+    useEffect(() => { fetchSalonTypes() }, [fetchSalonTypes])
+    useEffect(() => { fetchProfile() }, [fetchProfile])
 
-    const [personalForm, setPersonalForm] = useState({
-        name: "Salitha Chathuranga",
-        email: "salithach@salonhq.com",
-        phone: "+1 555-0100",
-        role,
-    })
-    const [personalDraft, setPersonalDraft] = useState(personalForm)
+    const role    = user?.roles?.[0]?.name ?? "User"
+    const initial = (user?.owner?.name?.[0] ?? role[0])?.toUpperCase() ?? "U"
+
+    // ── Edit drafts (only created when the user opens the edit panel) ──────────
+    const [personalDraft, setPersonalDraft] = useState({ name: "", email: "", phone: "" })
     const [editPersonal, setEditPersonal] = useState(false)
 
-    const [salonForm, setSalonForm] = useState({
-        salonName: "SalonHQ Studio",
-        salonType: "HAIR_SALON",
-        username: "salithach",
-        address: "123 Main Street, Suite 4",
-        city: "Los Angeles",
-        state: "CA",
-        zip: "90001",
-        country: "United States",
-        website: "https://salonhq.com",
+    const [salonDraft, setSalonDraft] = useState({
+        salonName: "", salonType: "", username: "",
+        address: "", city: "", state: "", zip: "", country: "", website: "",
     })
-    const [salonDraft, setSalonDraft] = useState(salonForm)
     const [editSalon, setEditSalon] = useState(false)
 
-    const [passwordForm, setPasswordForm] = useState({ current: "", next: "", confirm: "" })
-    const [showPassword, setShowPassword] = useState(false)
+    const openEditPersonal = () => {
+        setPersonalDraft({
+            name:  user?.owner?.name      ?? "",
+            email: user?.email            ?? "",
+            phone: user?.owner?.phoneNumber ?? "",
+        })
+        setEditPersonal(true)
+    }
 
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [deleteConfirmText, setDeleteConfirmText] = useState("")
-
-    const [passwordError, setPasswordError] = useState("")
+    const openEditSalon = () => {
+        setSalonDraft({
+            salonName: user?.salon?.salonName    ?? "",
+            salonType: user?.salon?.salonType    ?? "",
+            username:  user?.username            ?? "",
+            address:   user?.location?.address   ?? "",
+            city:      user?.location?.city      ?? "",
+            state:     user?.location?.state     ?? "",
+            zip:       user?.location?.zipCode   ?? "",
+            country:   user?.location?.country   ?? "",
+            website:   user?.salon?.website      ?? "",
+        })
+        setEditSalon(true)
+    }
 
     const handlePersonalSave = (e: React.FormEvent) => {
         e.preventDefault()
-        setPersonalForm(personalDraft)
+        setPersonalDraft(personalDraft)
         setEditPersonal(false)
         toast.success("Owner details saved", { description: "Your personal information has been updated." })
     }
 
     const handleSalonSave = (e: React.FormEvent) => {
         e.preventDefault()
-        setSalonForm(salonDraft)
+        setSalonDraft(salonDraft)
         setEditSalon(false)
         toast.success("Salon details saved", { description: "Your salon information has been updated." })
     }
@@ -92,6 +95,14 @@ export default function ProfilePage() {
         toast.success("Password updated", { description: "Your account password has been changed successfully." })
     }
 
+    const [passwordForm, setPasswordForm] = useState({ current: "", next: "", confirm: "" })
+    const [showPassword, setShowPassword] = useState(false)
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleteConfirmText, setDeleteConfirmText] = useState("")
+
+    const [passwordError, setPasswordError] = useState("")
+
     return (
         <div className="max-w-3xl mx-auto space-y-6">
 
@@ -101,8 +112,8 @@ export default function ProfilePage() {
                     {initial}
                 </div>
                 <div>
-                    <p className="text-lg font-semibold text-gray-900">{personalForm.name}</p>
-                    <p className="text-sm text-gray-500">{personalForm.email}</p>
+                    <p className="text-lg font-semibold text-gray-900">{user?.owner?.name ?? user?.username ?? ""}</p>
+                    <p className="text-sm text-gray-500">{user?.email ?? ""}</p>
                     <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-black text-white">
                         {role}
                     </span>
@@ -131,7 +142,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={() => { setSalonDraft(salonForm); setEditSalon(true) }}
+                        <button onClick={openEditSalon}
                             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black border border-gray-200 px-3 py-1.5 rounded-lg transition">
                             <Pencil size={12} /> Edit
                         </button>
@@ -159,7 +170,12 @@ export default function ProfilePage() {
                                 <label className={labelCls}>Username</label>
                                 <div className="relative">
                                     <AtSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input type="text" value={salonDraft.username} onChange={(e) => setSalonDraft({ ...salonDraft, username: e.target.value })} className={`${inputCls} pl-7`} />
+                                    <input
+                                        type="text"
+                                        value={user?.username ?? ""}
+                                        disabled
+                                        className={`${inputCls} pl-7 bg-gray-50 text-gray-400 cursor-not-allowed`}
+                                    />
                                 </div>
                             </div>
                             <div>
@@ -200,13 +216,13 @@ export default function ProfilePage() {
                 ) : (
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <ReadField label="Salon Name" value={salonForm.salonName} />
+                            <ReadField label="Salon Name" value={user?.salon?.salonName ?? ""} />
                             <ReadField label="Salon Type" value={
-                                (salonTypeOptions.find((o) => (typeof o === "object" ? o.value : o) === salonForm.salonType) as { label: string } | undefined)?.label
-                                ?? salonForm.salonType
+                                (salonTypeOptions.find((o) => (typeof o === "object" ? o.value : o) === user?.salon?.salonType) as { label: string } | undefined)?.label
+                                ?? user?.salon?.salonType ?? ""
                             } />
-                            <ReadField label="Username" value={`@${salonForm.username}`} />
-                            <ReadField label="Website" value={salonForm.website} />
+                            <ReadField label="Username" value={`@${user?.username ?? ""}`} />
+                            <ReadField label="Website" value={user?.salon?.website ?? ""} />
                         </div>
                         <div className="h-px bg-gray-100" />
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -214,14 +230,13 @@ export default function ProfilePage() {
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="sm:col-span-2">
-                                <ReadField label="Street Address" value={salonForm.address} />
+                                <ReadField label="Street Address" value={user?.location?.address ?? ""} />
                             </div>
-                            <ReadField label="City" value={salonForm.city} />
-                            <ReadField label="State / Province" value={salonForm.state} />
-                            <ReadField label="ZIP / Postal Code" value={salonForm.zip} />
-                            <ReadField label="Country" value={salonForm.country} />
+                            <ReadField label="City"             value={user?.location?.city    ?? ""} />
+                            <ReadField label="State / Province" value={user?.location?.state   ?? ""} />
+                            <ReadField label="ZIP / Postal Code" value={user?.location?.zipCode ?? ""} />
+                            <ReadField label="Country"          value={user?.location?.country ?? ""} />
                         </div>
-
                     </div>
                 )}
             </div>
@@ -248,7 +263,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={() => { setPersonalDraft(personalForm); setEditPersonal(true) }}
+                        <button onClick={openEditPersonal}
                             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black border border-gray-200 px-3 py-1.5 rounded-lg transition">
                             <Pencil size={12} /> Edit
                         </button>
@@ -272,17 +287,17 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <label className={labelCls}>Username</label>
-                                <input type="text" value={salonForm.username} disabled className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed" />
+                                <input type="text" value={user?.username ?? ""} disabled className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed" />
                             </div>
                         </div>
                     </form>
                 ) : (
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <ReadField label="Full Name" value={personalForm.name} />
-                            <ReadField label="Email Address" value={personalForm.email} />
-                            <ReadField label="Phone Number" value={personalForm.phone} />
-                            <ReadField label="Username" value={`@${salonForm.username}`} />
+                            <ReadField label="Full Name"     value={user?.owner?.name          ?? ""} />
+                            <ReadField label="Email Address" value={user?.email                 ?? ""} />
+                            <ReadField label="Phone Number"  value={user?.owner?.phoneNumber    ?? ""} />
+                            <ReadField label="Username"      value={`@${user?.username ?? ""}`} />
                         </div>
 
                     </div>

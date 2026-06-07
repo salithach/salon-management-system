@@ -2,26 +2,13 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 export type AuthUser = {
-    _id: string
-    email: string
+    _id?: string
+    email?: string
     username: string
     roles: { name: string }[]
-    owner?: {
-        name: string
-        phoneNumber?: string
-    }
-    salon?: {
-        salonName: string
-        salonType: string
-        website?: string
-    }
-    location?: {
-        address?: string
-        city?: string
-        state?: string
-        zipCode?: string
-        country?: string
-    }
+    owner?: { name: string; phoneNumber?: string }
+    salon?: { salonName: string; salonType: string; website?: string }
+    location?: { address?: string; city?: string; state?: string; zipCode?: string; country?: string }
 }
 
 type AuthState = {
@@ -32,13 +19,21 @@ type AuthState = {
     _hasHydrated: boolean
     login: (username: string, password: string) => Promise<boolean>
     register: (data: Record<string, unknown>) => Promise<void>
+    fetchProfile: () => Promise<void>
     logout: () => void
     setHasHydrated: (value: boolean) => void
 }
 
+/** Strip sensitive / internal fields before saving to store / localStorage */
+function sanitize(raw: Record<string, unknown>): AuthUser {
+    const { password: _p, _class: _c, token: _t, ...safe } = raw
+    void _p; void _c; void _t
+    return safe as AuthUser
+}
+
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
             token: null,
             loading: false,
@@ -54,9 +49,7 @@ export const useAuthStore = create<AuthState>()(
                         body: JSON.stringify({ username, password }),
                         headers: { "Content-Type": "application/json" },
                     })
-
                     const result = await res.json()
-
                     if (!res.ok) {
                         const msg =
                             (typeof result.message === "object"
@@ -65,15 +58,9 @@ export const useAuthStore = create<AuthState>()(
                         set({ error: msg, loading: false })
                         return false
                     }
-
                     const raw = result.data ?? result
-                    const { token, password: _pw, _class, ...userFields } = raw
-
-                    set({
-                        user: userFields as AuthUser,
-                        token,
-                        loading: false,
-                    })
+                    const token = raw.token as string
+                    set({ user: null, token, loading: false })
                     return true
                 } catch {
                     set({ error: "Network error. Please try again.", loading: false })
@@ -81,17 +68,31 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
+            fetchProfile: async () => {
+                const token = get().token
+                if (!token) return
+                try {
+                    const res = await fetch("/api/users/me", {
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                    })
+                    if (!res.ok) return
+                    const data = await res.json()
+                    const raw = data?.data ?? data
+                    set({ user: sanitize(raw) })
+                } catch { /* silently ignore */ }
+            },
+
             register: async (formData: Record<string, unknown>) => {
                 try {
                     set({ loading: true, error: null })
-                    console.log("Registering user with data:", formData)
-
                     const res = await fetch("/api/register", {
                         method: "POST",
                         body: JSON.stringify(formData),
                         headers: { "Content-Type": "application/json" },
                     })
-
                     const result = await res.json()
                     if (!res.ok) {
                         const msg =
@@ -101,7 +102,6 @@ export const useAuthStore = create<AuthState>()(
                         set({ error: msg as string, loading: false })
                         return
                     }
-
                     set({ loading: false })
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : "Network error"
@@ -109,19 +109,12 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            logout: () => {
-                set({ user: null, token: null })
-            },
+            logout: () => { set({ user: null, token: null }) },
         }),
         {
             name: "auth-storage",
-            partialize: (state) => ({
-                user: state.user,
-                token: state.token,
-            }),
-            onRehydrateStorage: () => (state) => {
-                state?.setHasHydrated(true)
-            },
+            partialize: (state) => ({ user: state.user, token: state.token }),
+            onRehydrateStorage: () => (state) => { state?.setHasHydrated(true) },
         }
     )
 )
