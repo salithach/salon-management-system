@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { useAuthStore } from "@/store/authStore"
+import { useAuthStore, AuthUser } from "@/store/authStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import {
     LayoutDashboard, CalendarDays, Users, Scissors,
@@ -32,7 +32,7 @@ const pageTitles: Record<string, string> = {
 }
 
 type SidebarContentProps = {
-    user: { roles: string[] } | null
+    user: AuthUser | null
     pathname: string
     onClose: () => void
     onLogout: () => void
@@ -69,11 +69,11 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                     className="flex items-center gap-3 px-3 py-2 mb-1 rounded-lg hover:bg-white/10 transition group"
                 >
                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-semibold text-white shrink-0">
-                        {user?.roles?.[0]?.[0]?.toUpperCase() ?? "U"}
+                        {user?.roles?.[0]?.name?.[0]?.toUpperCase() ?? "U"}
                     </div>
                     <div>
                         <p className="text-sm font-medium leading-none text-white">My Account</p>
-                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0] ?? "User"}</p>
+                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0]?.name ?? "User"}</p>
                     </div>
                     <ChevronRight size={14} className="ml-auto text-white/40 group-hover:text-white transition" />
                 </Link>

@@ -1,8 +1,31 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+export type AuthUser = {
+    _id: string
+    email: string
+    username: string
+    roles: { name: string }[]
+    owner?: {
+        name: string
+        phoneNumber?: string
+    }
+    salon?: {
+        salonName: string
+        salonType: string
+        website?: string
+    }
+    location?: {
+        address?: string
+        city?: string
+        state?: string
+        zipCode?: string
+        country?: string
+    }
+}
+
 type AuthState = {
-    user: { roles: string[] } | null
+    user: AuthUser | null
     token: string | null
     loading: boolean
     error: string | null
@@ -43,8 +66,14 @@ export const useAuthStore = create<AuthState>()(
                         return false
                     }
 
-                    const { token, roles } = result.data
-                    set({ user: { roles }, token, loading: false })
+                    const raw = result.data ?? result
+                    const { token, password: _pw, _class, ...userFields } = raw
+
+                    set({
+                        user: userFields as AuthUser,
+                        token,
+                        loading: false,
+                    })
                     return true
                 } catch {
                     set({ error: "Network error. Please try again.", loading: false })

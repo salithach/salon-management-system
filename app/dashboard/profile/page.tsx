@@ -28,7 +28,7 @@ export default function ProfilePage() {
     useEffect(() => {
         fetchSalonTypes()
     }, [fetchSalonTypes])
-    const role = user?.roles?.[0] ?? "User"
+    const role = user?.roles?.[0]?.name ?? "User"
     const initial = role[0]?.toUpperCase() ?? "U"
 
     const [personalForm, setPersonalForm] = useState({

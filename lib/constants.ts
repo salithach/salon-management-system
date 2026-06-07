@@ -14,21 +14,6 @@ export const toDropDownOptions = (items: OptionItem[]) =>
 export const resolveDescription = (items: OptionItem[], code: string): string =>
     items.find((i) => i.code === code)?.description ?? code
 
-// ── Salon types ───────────────────────────────────────────────────────────────
-export const SALON_TYPES: OptionItem[] = [
-    { code: "HAIR_SALON",         description: "Hair Salon" },
-    { code: "BARBERSHOP",         description: "Barbershop" },
-    { code: "NAIL_SALON",         description: "Nail Salon" },
-    { code: "BEAUTY_SPA",         description: "Beauty Spa" },
-    { code: "MASSAGE_STUDIO",     description: "Massage Studio" },
-    { code: "TANNING_SALON",      description: "Tanning Salon" },
-    { code: "WAXING_STUDIO",      description: "Waxing Studio" },
-    { code: "FULL_SERVICE_SALON", description: "Full-Service Salon" },
-    { code: "BRIDAL_STUDIO",      description: "Bridal Studio" },
-    { code: "OTHER",              description: "Other" },
-]
-export const SALON_TYPE_OPTIONS = toDropDownOptions(SALON_TYPES)
-
 // ── Inventory categories ──────────────────────────────────────────────────────
 export const INVENTORY_CATEGORIES: OptionItem[] = [
     { code: "ALL",       description: "All" },

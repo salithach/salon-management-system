@@ -8,7 +8,6 @@ import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
 import SuccessScreen from "@/components/SuccessScreen"
-import { SALON_TYPES, resolveDescription } from "@/lib/constants"
 import { useSalonStore } from "@/store/salonStore"
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-black text-gray-900 placeholder:text-gray-400 bg-white"
@@ -36,13 +35,13 @@ export default function RegisterPage() {
     }, [fetchSalonTypes])
 
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "fdf", email: "", password: "", confirm: "" })
+    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "fdfdf", phoneNumber: "" })
+    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "fdfd", salonType: "", website: "" })
+    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "" })
 
     // Step 4 — location
     const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
@@ -59,7 +58,7 @@ export default function RegisterPage() {
     const resolveSalonTypeLabel = (code: string): string => {
         const match = salonTypeOptions.find((o) => (typeof o === "object" ? o.value : o) === code)
         if (match) return typeof match === "object" ? match.label : match
-        return resolveDescription(SALON_TYPES, code)
+        return code
     }
 
     const validate = (): boolean => {
