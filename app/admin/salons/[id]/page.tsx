@@ -34,16 +34,17 @@ export default function AdminSalonDetailPage() {
         const current = useAdminStore.getState().selectedSalon
         if (current && current.id === id) {
             // Salon already passed from the list — only fetch staff
-            fetchSalonStaff(id)
+            fetchSalonStaff(id).then(() =>{})
         } else {
             // Direct URL access or different salon — fetch both
-            fetchSalonById(id)
-            fetchSalonStaff(id)
+            fetchSalonById(id).then(() =>{})
+            fetchSalonStaff(id).then(() =>{})
         }
     }, [_hasHydrated, id]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Sync form when salon loads
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (selectedSalon) setForm(selectedSalon)
     }, [selectedSalon])
 
@@ -85,7 +86,7 @@ export default function AdminSalonDetailPage() {
 
             {/* Hero card */}
             {selectedSalon && (
-                <div className="bg-gradient-to-br from-indigo-950 to-indigo-800 rounded-2xl p-6 text-white flex items-start gap-5">
+                <div className="bg-linear-to-br from-indigo-950 to-indigo-800 rounded-2xl p-6 text-white flex items-start gap-5">
                     <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold shrink-0">
                         {(selectedSalon.salonName?.[0] ?? "S").toUpperCase()}
                     </div>
@@ -343,7 +344,7 @@ function ServicesTab({ salonId }: { salonId: string }) {
 
     // Ensure metadata is loaded
     useEffect(() => {
-        fetchMetadata({ headers: { 'X-Tenant-Id': salonId }}).then(() => {}) },
+        fetchMetadata().then(() => {}) },
         [fetchMetadata, salonId]
     )
 
