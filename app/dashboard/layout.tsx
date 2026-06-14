@@ -96,8 +96,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
-        if (_hasHydrated && !token) router.replace("/login")
-    }, [_hasHydrated, token, router])
+        if (!_hasHydrated) return
+        if (!token) { router.replace("/login"); return }
+        // Redirect admins out of the regular dashboard
+        const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
+        if (isAdmin) { router.replace("/admin"); return }
+    }, [_hasHydrated, token, user, router])
 
     // Fetch metadata (jobTypes + jobRoles) once when the dashboard loads
     useEffect(() => {
@@ -106,7 +110,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [_hasHydrated, token, fetchMetadata])
 
-    if (!_hasHydrated || !token) return null
+    const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
+    if (!_hasHydrated || !token || isAdmin) return null
 
     const handleLogout = () => {
         logout()

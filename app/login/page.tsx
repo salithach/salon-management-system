@@ -10,11 +10,16 @@ export default function LoginPage() {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [validationError, setValidationError] = useState("")
-    const { login, loading, error, token, _hasHydrated } = useAuthStore()
+    const { login, fetchProfile, loading, error, token, _hasHydrated } = useAuthStore()
     const router = useRouter()
 
     useEffect(() => {
-        if (_hasHydrated && token) router.replace("/dashboard")
+        if (_hasHydrated && token) {
+            // Already logged in — check existing role and redirect
+            const user = useAuthStore.getState().user
+            const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
+            router.replace(isAdmin ? "/admin" : "/dashboard")
+        }
     }, [_hasHydrated, token, router])
 
     if (!_hasHydrated || token) return null
@@ -25,7 +30,13 @@ export default function LoginPage() {
         if (!username.trim()) { setValidationError("Username is required."); return }
         if (!password) { setValidationError("Password is required."); return }
         const success = await login(username, password)
-        if (success) router.push("/dashboard")
+        if (success) {
+            // Fetch profile to determine role before routing
+            await fetchProfile()
+            const user = useAuthStore.getState().user
+            const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
+            router.push(isAdmin ? "/admin" : "/dashboard")
+        }
     }
 
     return (

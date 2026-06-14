@@ -35,16 +35,16 @@ export default function RegisterPage() {
     }, [fetchSalonTypes])
 
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
+    const [account, setAccount] = useState({ username: "salitha", email: "salitha@test.com", password: "11111111", confirm: "11111111" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
+    const [owner, setOwner] = useState({ name: "Salitha Chathuranga", phoneNumber: "0777123456" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "" })
+    const [salon, setSalon] = useState({ salonName: "Sali Bro", salonType: "HAIR_SALON", website: "salitha.com", currency: "LKR" })
 
     // Step 4 — location
-    const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
+    const [location, setLocation] = useState({ address: "Raigama", city: "Bandaragama", state: "Western", zipCode: "12530", country: "Sri Lanka" })
 
     const [errors, setErrors] = useState<string[]>([])
 
@@ -314,6 +314,11 @@ export default function RegisterPage() {
                                         <input type="url" value={salon.website} onChange={e => setSalon({ ...salon, website: e.target.value })}
                                             placeholder="https://yoursalon.com" className={`${inputCls} pl-7`} />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Payment Currency</label>
+                                    <input type="text" value={salon.currency} onChange={e => setSalon({ ...salon, currency: e.target.value })}
+                                           placeholder="Glow Studio" className={inputCls} />
                                 </div>
                             </>
                         )}
