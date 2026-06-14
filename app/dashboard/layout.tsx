@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore, AuthUser } from "@/store/authStore"
 import { useMetadataStore } from "@/store/metadataStore"
+import { isAdmin } from "@/lib/auth"
 import {
     LayoutDashboard, CalendarDays, Users, Scissors,
     UserCheck, BarChart3, LogOut, ChevronRight, Menu, X, Package
@@ -98,9 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     useEffect(() => {
         if (!_hasHydrated) return
         if (!token) { router.replace("/login"); return }
-        // Redirect admins out of the regular dashboard
-        const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
-        if (isAdmin) { router.replace("/admin"); return }
+        if (isAdmin(user)) { router.replace("/admin"); return }
     }, [_hasHydrated, token, user, router])
 
     // Fetch metadata (jobTypes + jobRoles) once when the dashboard loads
@@ -110,8 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [_hasHydrated, token, fetchMetadata])
 
-    const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
-    if (!_hasHydrated || !token || isAdmin) return null
+    if (!_hasHydrated || !token || isAdmin(user)) return null
 
     const handleLogout = () => {
         logout()

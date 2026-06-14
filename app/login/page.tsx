@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/store/authStore"
+import { isAdmin } from "@/lib/auth"
 import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -15,10 +16,8 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (_hasHydrated && token) {
-            // Already logged in — check existing role and redirect
             const user = useAuthStore.getState().user
-            const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
-            router.replace(isAdmin ? "/admin" : "/dashboard")
+            router.replace(isAdmin(user) ? "/admin" : "/dashboard")
         }
     }, [_hasHydrated, token, router])
 
@@ -31,11 +30,9 @@ export default function LoginPage() {
         if (!password) { setValidationError("Password is required."); return }
         const success = await login(username, password)
         if (success) {
-            // Fetch profile to determine role before routing
             await fetchProfile()
             const user = useAuthStore.getState().user
-            const isAdmin = user?.roles?.some((r) => r.name === "ROLE_ADMIN")
-            router.push(isAdmin ? "/admin" : "/dashboard")
+            router.push(isAdmin(user) ? "/admin" : "/dashboard")
         }
     }
 

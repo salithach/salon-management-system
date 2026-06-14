@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore } from "@/store/authStore"
+import { isAdmin } from "@/lib/auth"
 import { Building2, LogOut, ChevronRight, Menu, X, LayoutDashboard } from "lucide-react"
 
 const adminNavItems = [
@@ -84,8 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         // If we already have the user, check role immediately
         const checkRole = (u: typeof user) => {
-            const isAdmin = u?.roles?.some((r) => r.name === "ROLE_ADMIN")
-            if (!isAdmin) {
+            if (!isAdmin(u)) {
                 router.replace("/dashboard")
             } else {
                 setChecking(false)
