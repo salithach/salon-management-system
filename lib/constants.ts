@@ -14,6 +14,16 @@ export const toDropDownOptions = (items: OptionItem[]) =>
 export const resolveDescription = (items: OptionItem[], code: string): string =>
     items.find((i) => i.code === code)?.description ?? code
 
+export const REQUEST_HEADERS = {
+    AUTHORIZATION: 'Authorization',
+    TENANT_ID: 'X-Tenant-Id',
+    CONTENT_TYPE: 'Content-Type',
+}
+
+export const CONTENT_TYPES = {
+    JSON: 'application/json',
+}
+
 // ── Inventory categories ──────────────────────────────────────────────────────
 export const INVENTORY_CATEGORIES: OptionItem[] = [
     { code: "ALL",       description: "All" },

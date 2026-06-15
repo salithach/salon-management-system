@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     ArrowLeft, Building2, User, MapPin, Globe, Phone,
-    Users, Scissors, Save, Loader2, AlertCircle, UserCheck
+    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw
 } from "lucide-react"
 import { useAdminStore, Salon, AdminStaffMember } from "@/store/adminStore"
 import { useMetadataStore } from "@/store/metadataStore"
@@ -147,7 +147,7 @@ export default function AdminSalonDetailPage() {
             )}
 
             {activeTab === "services" && (
-                <ServicesTab salonId={id} />
+                <ServicesTab salonId={id} tenantId={selectedSalon?.username} />
             )}
         </>
     )
@@ -335,28 +335,29 @@ function StaffTab({
 }
 
 /* ───────────────────────────── Services Tab ─────────────────────────── */
-function ServicesTab({ salonId }: { salonId: string }) {
+function ServicesTab({ salonId, tenantId }: { salonId: string, tenantId: string | undefined }) {
     const { jobTypes, metadataLoading, addJobType, fetchMetadata } = useMetadataStore()
+    const { user } = useAuthStore()
     const [newKey, setNewKey]           = useState("")
     const [newValue, setNewValue]       = useState("")
     const [newCategory, setNewCategory] = useState("")
     const [adding, setAdding]           = useState(false)
 
-    // Ensure metadata is loaded
     useEffect(() => {
-        fetchMetadata().then(() => {}) },
-        [fetchMetadata, salonId]
+        fetchMetadata({ force: true, tenantId, user }).then(() => {}) },
+        [fetchMetadata, tenantId, user]
     )
 
     const handleAdd = async () => {
         if (!newKey.trim() || !newValue.trim()) return
         setAdding(true)
         try {
+            const options = { force: false, tenantId, user }
             await addJobType({
-                key:      newKey.trim(),
-                value:    newValue.trim(),
+                key: newKey.trim(),
+                value: newValue.trim(),
                 ...(newCategory.trim() ? { category: newCategory.trim() } : {}),
-            })
+            }, options)
             setNewKey("")
             setNewValue("")
             setNewCategory("")
@@ -412,11 +413,21 @@ function ServicesTab({ salonId }: { salonId: string }) {
 
             {/* Services list */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                    <Scissors size={15} className="text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-900">
-                        Services <span className="ml-1 text-xs font-normal text-gray-400">({jobTypes.length})</span>
-                    </span>
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <Scissors size={15} className="text-gray-400" />
+                        <span className="text-sm font-semibold text-gray-900">
+                            Services <span className="ml-1 text-xs font-normal text-gray-400">({jobTypes.length})</span>
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => fetchMetadata({ force: true, tenantId, user })}
+                        disabled={metadataLoading}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                    >
+                        <RefreshCw size={12} className={metadataLoading ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
                 </div>
 
                 {metadataLoading ? (

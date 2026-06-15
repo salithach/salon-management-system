@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import {CONTENT_TYPES, REQUEST_HEADERS} from "@/lib/constants";
 
 const API_BASE = process.env.API_BASE_URL
 
@@ -8,10 +9,17 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const auth = req.headers.get("Authorization") ?? ""
+        const auth = req.headers.get(REQUEST_HEADERS.AUTHORIZATION) ?? ""
+        const tenantId = req.headers.get(REQUEST_HEADERS.TENANT_ID) ?? ""
         const res = await fetch(`${API_BASE}/api/v1/metadata`, {
             method: "GET",
-            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
+            headers: {
+                [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+                ...(auth ? {
+                    [REQUEST_HEADERS.AUTHORIZATION]: auth,
+                    [REQUEST_HEADERS.TENANT_ID]: tenantId
+                } : {})
+            },
         })
 
         const data = await res.json()
