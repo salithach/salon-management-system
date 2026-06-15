@@ -446,28 +446,34 @@ function StaffTab({
                     <p className="text-sm text-gray-400">No staff members found for this salon</p>
                 </div>
             ) : (
-                <div className="divide-y divide-gray-50">
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {staff.map((member) => {
                         const role = typeof member.role === "object"
                             ? member.role?.name ?? member.role?.key
                             : member.role
                         return (
-                            <div key={member.id ?? member.username} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm shrink-0">
-                                    {(member.name?.[0] ?? "?").toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-gray-900">{member.name}</p>
-                                    <p className="text-xs text-gray-400">{member.username}</p>
-                                </div>
-                                <div className="hidden sm:block text-right">
-                                    <p className="text-xs text-gray-500">{role ?? "—"}</p>
-                                    {member.specialty && <p className="text-[10px] text-gray-400">{member.specialty}</p>}
-                                </div>
-                                {member.phone && (
-                                    <div className="hidden md:flex items-center gap-1 text-xs text-gray-400">
-                                        <Phone size={11} />{member.phone}
+                            <div key={member.id ?? member.username}
+                                className="flex flex-col gap-3 bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-indigo-200 hover:bg-indigo-50/20 transition">
+                                {/* Avatar + name */}
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm shrink-0">
+                                        {(member.name?.[0] ?? "?").toUpperCase()}
                                     </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{member.name}</p>
+                                        <p className="text-xs text-gray-400 truncate">@{member.username}</p>
+                                    </div>
+                                </div>
+                                {/* Badges */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {role && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600">{role}</span>}
+                                    {member.specialty && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">{member.specialty}</span>}
+                                </div>
+                                {/* Phone */}
+                                {member.phone && (
+                                    <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                                        <Phone size={10} />{member.phone}
+                                    </p>
                                 )}
                             </div>
                         )
@@ -649,18 +655,16 @@ function ServicesTab({ salonId }: { salonId: string }) {
                         <p className="text-sm text-gray-400">No services configured for this salon</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-50">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                         {salonServices.map((svc) => (
-                            <div key={svc.key} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900">{svc.value}</p>
-                                    {svc.category && (
-                                        <p className="text-xs text-indigo-500 mt-0.5">{svc.category}</p>
-                                    )}
+                            <div key={svc.key} className="flex flex-col gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition">
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="text-sm font-semibold text-gray-900 leading-tight">{svc.value}</p>
+                                    <span className="text-[10px] font-mono bg-white border border-gray-200 text-gray-500 px-2 py-0.5 rounded shrink-0">{svc.key}</span>
                                 </div>
-                                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
-                                    {svc.key}
-                                </span>
+                                {svc.category && (
+                                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 self-start">{svc.category}</span>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -761,13 +765,11 @@ function RolesTab({
                         <p className="text-sm text-gray-400">No job roles configured for this salon</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-50">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                         {roles.map((role) => (
-                            <div key={role.key} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition">
-                                <p className="text-sm font-medium text-gray-900">{role.value}</p>
-                                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
-                                    {role.key}
-                                </span>
+                            <div key={role.key} className="flex items-start justify-between gap-2 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:border-indigo-200 hover:bg-indigo-50/30 transition">
+                                <p className="text-sm font-semibold text-gray-900 leading-tight">{role.value}</p>
+                                <span className="text-[10px] font-mono bg-white border border-gray-200 text-gray-500 px-2 py-0.5 rounded shrink-0">{role.key}</span>
                             </div>
                         ))}
                     </div>
