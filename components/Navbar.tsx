@@ -14,8 +14,8 @@ export default function Navbar() {
     const pathname = usePathname()
     const isLoggedIn = !!token
 
-    // Dashboard has its own sidebar and top bar — suppress the global navbar there
-    if (pathname?.startsWith("/dashboard")) return null
+    // Dashboard and admin panel have their own sidebar/top bar — suppress the global navbar there
+    if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) return null
 
     const handleLogout = () => {
         logout()

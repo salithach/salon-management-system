@@ -24,6 +24,7 @@ function normalizeSalon(item: unknown): Salon {
         id:        String(i.id  ?? i._id ?? i.username ?? ""),
         username:  String(i.username ?? ""),
         email:     String(i.email    ?? ""),
+        active:    typeof i.active === "boolean" ? i.active : typeof i.enabled === "boolean" ? i.enabled : undefined,
         salonName: salonObj.salonName ?? (i.salonName as string) ?? "",
         salonType: salonObj.salonType ?? (i.salonType as string) ?? "",
         website:   salonObj.website   ?? (i.website   as string) ?? "",
@@ -41,6 +42,7 @@ export type Salon = {
     id: string
     username: string
     email?: string
+    active?: boolean
     // salon section
     salonName: string
     salonType: string
@@ -116,6 +118,7 @@ type AdminState = {
     addSalonStaff: (salonId: string, options: Options, payload: AddStaffPayload) => Promise<void>
     fetchSalonRoles: (salonId: string) => Promise<void>
     addSalonRole: (salonId: string, entry: JobRole) => Promise<void>
+    activateUser: (salonId: string) => Promise<void>
     clearSelected: () => void
 }
 
@@ -296,6 +299,22 @@ export const useAdminStore = create<AdminState>()(
         const data = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(data?.message || data?.errors?.[0]?.message || "Failed to add role")
         set((state) => ({ salonRoles: [...state.salonRoles, entry] }))
+    },
+
+    activateUser: async (salonId: string) => {
+        const res = await apiFetch(`/api/admin/salons/${salonId}/activate`, {
+            method: "PATCH",
+            headers: authHeaders(),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.message || "Failed to activate user")
+        // Mark as active in both the list and the selected salon
+        set((state) => ({
+            salons: state.salons.map((s) => s.id === salonId ? { ...s, active: true } : s),
+            selectedSalon: state.selectedSalon?.id === salonId
+                ? { ...state.selectedSalon, active: true }
+                : state.selectedSalon,
+        }))
     },
 
     clearSelected: () => set({

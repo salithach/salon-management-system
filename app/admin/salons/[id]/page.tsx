@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     ArrowLeft, Building2, User, MapPin, Globe, Phone,
-    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw, UserPlus, X, ShieldCheck
+    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw, UserPlus, X, ShieldCheck, CheckCircle2
 } from "lucide-react"
 import { useAdminStore, Salon, AdminStaffMember, AddStaffPayload, JobRole } from "@/store/adminStore"
 import { useMetadataStore } from "@/store/metadataStore"
+import { useSalonStore } from "@/store/salonStore"
 import { useAuthStore } from "@/store/authStore"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
@@ -25,8 +26,22 @@ export default function AdminSalonDetailPage() {
         salonRoles, salonRolesLoading,
         saving,
         fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff,
-        fetchSalonRoles, addSalonRole,
+        fetchSalonRoles, addSalonRole, activateUser,
     } = useAdminStore()
+
+    const [activating, setActivating] = useState(false)
+
+    const handleActivate = async () => {
+        setActivating(true)
+        try {
+            await activateUser(id)
+            toast.success("User activated successfully")
+        } catch (err) {
+            toast.error((err as Error).message)
+        } finally {
+            setActivating(false)
+        }
+    }
 
     const [activeTab, setActiveTab] = useState<Tab>("info")
     const [form, setForm] = useState<Partial<Salon>>({})
@@ -95,10 +110,23 @@ export default function AdminSalonDetailPage() {
                     <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold shrink-0">
                         {(selectedSalon.salonName?.[0] ?? "S").toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                        <h2 className="text-xl font-bold">{selectedSalon.salonName}</h2>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h2 className="text-xl font-bold">{selectedSalon.salonName}</h2>
+                            {/* Status badge — shown when backend provides the field */}
+                            {selectedSalon.active === true && (
+                                <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                                    <CheckCircle2 size={10} /> Active
+                                </span>
+                            )}
+                            {selectedSalon.active === false && (
+                                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                    Pending Activation
+                                </span>
+                            )}
+                        </div>
                         <p className="text-indigo-300 text-sm mt-0.5">{selectedSalon.salonType}</p>
-                        <div className="flex flex-wrap gap-4 mt-3 text-xs text-indigo-200">
+                        <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-indigo-200">
                             {selectedSalon.ownerName && (
                                 <span className="flex items-center gap-1"><User size={11} />{selectedSalon.ownerName}</span>
                             )}
@@ -113,6 +141,19 @@ export default function AdminSalonDetailPage() {
                             )}
                         </div>
                     </div>
+                    {/* Activate button — always visible unless confirmed active */}
+                    {selectedSalon.active !== true && (
+                        <button
+                            onClick={handleActivate}
+                            disabled={activating}
+                            className="flex items-center gap-1.5 shrink-0 px-4 py-2 text-xs font-semibold bg-amber-400 text-amber-900 rounded-lg hover:bg-amber-300 transition disabled:opacity-60"
+                        >
+                            {activating
+                                ? <><Loader2 size={12} className="animate-spin" /> Activating…</>
+                                : <><CheckCircle2 size={12} /> Activate User</>
+                            }
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -144,6 +185,7 @@ export default function AdminSalonDetailPage() {
                     saving={saving}
                     onSave={handleSave}
                     hasSalon={!!selectedSalon}
+                    onSalonTypeChange={(v) => setForm((f) => ({ ...f, salonType: v }))}
                 />
             )}
 
@@ -180,13 +222,20 @@ function InfoTab({
     saving,
     onSave,
     hasSalon,
+    onSalonTypeChange,
 }: {
     form: Partial<Salon>
     field: (k: keyof Salon) => (e: React.ChangeEvent<HTMLInputElement>) => void
     saving: boolean
     onSave: () => void
     hasSalon: boolean
+    onSalonTypeChange: (value: string) => void
 }) {
+    const { salonTypeOptions, salonTypesLoading, fetchSalonTypes } = useSalonStore()
+
+    useEffect(() => {
+        fetchSalonTypes().then(() => {})
+    }, [fetchSalonTypes])
     if (!hasSalon) {
         return (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
@@ -197,6 +246,7 @@ function InfoTab({
     }
 
     const inp = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+    const inpDisabled = "w-full px-3 py-2.5 text-sm border border-gray-100 rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed select-all"
     const lbl = "block text-xs font-medium text-gray-600 mb-1.5"
 
     return (
@@ -209,12 +259,22 @@ function InfoTab({
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
+                        <label className={lbl}>Username <span className="text-gray-400 font-normal">(read-only)</span></label>
+                        <input className={inpDisabled} value={form.username ?? ""} readOnly disabled />
+                    </div>
+                    <div>
                         <label className={lbl}>Salon Name</label>
                         <input className={inp} value={form.salonName ?? ""} onChange={field("salonName")} placeholder="Salon name" />
                     </div>
                     <div>
                         <label className={lbl}>Salon Type</label>
-                        <input className={inp} value={form.salonType ?? ""} onChange={field("salonType")} placeholder="e.g. Hair, Nail…" />
+                        <DropDown
+                            options={salonTypeOptions}
+                            value={form.salonType ?? ""}
+                            onChange={(v) => onSalonTypeChange(v as string)}
+                            placeholder={salonTypesLoading ? "Loading types…" : "Select a type…"}
+                            disabled={salonTypesLoading}
+                        />
                     </div>
                     <div className="sm:col-span-2">
                         <label className={lbl}>Website</label>
