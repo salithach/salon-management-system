@@ -35,16 +35,16 @@ export default function RegisterPage() {
     }, [fetchSalonTypes])
 
     // Step 1 — account
-    const [account, setAccount] = useState({ username: "salitha", email: "salitha@test.com", password: "11111111", confirm: "11111111" })
+    const [account, setAccount] = useState({ username: "", email: "", password: "", confirm: "" })
 
     // Step 2 — owner
-    const [owner, setOwner] = useState({ name: "Salitha Chathuranga", phoneNumber: "0777123456" })
+    const [owner, setOwner] = useState({ name: "", phoneNumber: "" })
 
     // Step 3 — salon
-    const [salon, setSalon] = useState({ salonName: "Sali Bro", salonType: "HAIR_SALON", website: "salitha.com", currency: "LKR" })
+    const [salon, setSalon] = useState({ salonName: "", salonType: "", website: "", currency: "" })
 
     // Step 4 — location
-    const [location, setLocation] = useState({ address: "Raigama", city: "Bandaragama", state: "Western", zipCode: "12530", country: "Sri Lanka" })
+    const [location, setLocation] = useState({ address: "", city: "", state: "", zipCode: "", country: "" })
 
     const [errors, setErrors] = useState<string[]>([])
 
