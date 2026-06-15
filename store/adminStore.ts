@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/authStore"
 import {headersWithAuth} from "@/lib/auth";
 import {Options} from "@/store/metadataStore";
 import {apiFetch} from "@/lib/apiFetch";
+import { CONTENT_TYPES, REQUEST_HEADERS } from "@/lib/constants"
 
 const authHeaders = (): Record<string, string> => {
     const token = useAuthStore.getState().token
@@ -72,6 +73,11 @@ export type JobType = {
     category?: string
 }
 
+export type JobRole = {
+    key: string
+    value: string
+}
+
 export type AddStaffPayload = {
     name: string
     username: string
@@ -96,6 +102,9 @@ type AdminState = {
     salonServices: JobType[]
     salonServicesLoading: boolean
 
+    salonRoles: JobRole[]
+    salonRolesLoading: boolean
+
     saving: boolean
 
     fetchSalons: (options?: { force?: boolean }) => Promise<void>
@@ -105,6 +114,8 @@ type AdminState = {
     fetchSalonStaff: (salonId: string, options: Options) => Promise<void>
     fetchSalonMetaData: (salonId: string, options: Options) => Promise<void>
     addSalonStaff: (salonId: string, options: Options, payload: AddStaffPayload) => Promise<void>
+    fetchSalonRoles: (salonId: string) => Promise<void>
+    addSalonRole: (salonId: string, entry: JobRole) => Promise<void>
     clearSelected: () => void
 }
 
@@ -123,6 +134,9 @@ export const useAdminStore = create<AdminState>()(
 
     salonServices: [],
     salonServicesLoading: false,
+
+    salonRoles: [],
+    salonRolesLoading: false,
 
     saving: false,
 
@@ -244,13 +258,55 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({ salonStaff: [...state.salonStaff, newMember as AdminStaffMember] }))
     },
 
+    fetchSalonRoles: async (salonId: string) => {
+        if (get().salonRolesLoading) return
+        set({ salonRolesLoading: true })
+        try {
+            const jwt      = authHeaders()
+            const tenantId = get().selectedSalon?.username ?? ""
+            const res = await apiFetch(`/api/admin/salons/${salonId}/roles`, {
+                headers: {
+                    ...jwt,
+                    ...(tenantId ? { [REQUEST_HEADERS.TENANT_ID]: tenantId } : {}),
+                },
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data?.message || "Failed to fetch roles")
+            const payload = data?.data ?? data ?? {}
+            const raw: unknown[] = Array.isArray(payload?.jobRoles) ? payload.jobRoles
+                : Array.isArray(payload) ? payload : []
+            set({ salonRoles: raw as JobRole[], salonRolesLoading: false })
+        } catch {
+            set({ salonRolesLoading: false })
+        }
+    },
+
+    addSalonRole: async (salonId: string, entry: JobRole) => {
+        const jwt      = authHeaders()
+        const tenantId = get().selectedSalon?.username ?? ""
+        const res = await apiFetch(`/api/admin/salons/${salonId}/roles`, {
+            method: "POST",
+            headers: {
+                [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+                ...jwt,
+                ...(tenantId ? { [REQUEST_HEADERS.TENANT_ID]: tenantId } : {}),
+            },
+            body: JSON.stringify([entry]),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.message || data?.errors?.[0]?.message || "Failed to add role")
+        set((state) => ({ salonRoles: [...state.salonRoles, entry] }))
+    },
+
     clearSelected: () => set({
         selectedSalon: null,
         salonStaff: [],
         salonServices: [],
+        salonRoles: [],
         selectedSalonLoading: false,
         salonStaffLoading: false,
         salonServicesLoading: false,
+        salonRolesLoading: false,
     }),
     setSelectedSalon: (salon: Salon) => set({ selectedSalon: salon }),
         }),

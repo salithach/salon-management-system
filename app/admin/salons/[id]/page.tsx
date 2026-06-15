@@ -5,15 +5,15 @@ import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     ArrowLeft, Building2, User, MapPin, Globe, Phone,
-    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw, UserPlus, X
+    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw, UserPlus, X, ShieldCheck
 } from "lucide-react"
-import { useAdminStore, Salon, AdminStaffMember, AddStaffPayload } from "@/store/adminStore"
+import { useAdminStore, Salon, AdminStaffMember, AddStaffPayload, JobRole } from "@/store/adminStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 
-type Tab = "info" | "staff" | "services"
+type Tab = "info" | "staff" | "services" | "roles"
 
 export default function AdminSalonDetailPage() {
     const { id } = useParams<{ id: string }>()
@@ -22,8 +22,10 @@ export default function AdminSalonDetailPage() {
     const {
         selectedSalon, selectedSalonLoading,
         salonStaff, salonStaffLoading,
+        salonRoles, salonRolesLoading,
         saving,
         fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff,
+        fetchSalonRoles, addSalonRole,
     } = useAdminStore()
 
     const [activeTab, setActiveTab] = useState<Tab>("info")
@@ -63,9 +65,10 @@ export default function AdminSalonDetailPage() {
     }
 
     const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-        { key: "info",     label: "Salon Info", icon: Building2 },
-        { key: "staff",    label: "Staff",      icon: Users },
-        { key: "services", label: "Services",   icon: Scissors },
+        { key: "info",     label: "Salon Info", icon: Building2   },
+        { key: "staff",    label: "Staff",      icon: Users       },
+        { key: "services", label: "Services",   icon: Scissors    },
+        { key: "roles",    label: "Job Roles",  icon: ShieldCheck },
     ]
 
     return (
@@ -155,6 +158,16 @@ export default function AdminSalonDetailPage() {
 
             {activeTab === "services" && (
                 <ServicesTab salonId={id} />
+            )}
+
+            {activeTab === "roles" && (
+                <RolesTab
+                    salonId={id}
+                    roles={salonRoles}
+                    loading={salonRolesLoading}
+                    onRefresh={() => fetchSalonRoles(id)}
+                    onAddRole={(entry: JobRole) => addSalonRole(id, entry)}
+                />
             )}
         </>
     )
@@ -599,3 +612,109 @@ function ServicesTab({ salonId }: { salonId: string }) {
     )
 }
 
+/* ────────────────────────────── Roles Tab ───────────────────────────── */
+function RolesTab({
+    salonId,
+    roles,
+    loading,
+    onRefresh,
+    onAddRole,
+}: {
+    salonId: string
+    roles: JobRole[]
+    loading: boolean
+    onRefresh: () => void
+    onAddRole: (entry: JobRole) => Promise<void>
+}) {
+    const [newKey, setNewKey]     = useState("")
+    const [newValue, setNewValue] = useState("")
+    const [adding, setAdding]     = useState(false)
+
+    // Load on first render
+    useEffect(() => { onRefresh() }, [salonId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleAdd = async () => {
+        if (!newKey.trim() || !newValue.trim()) return
+        setAdding(true)
+        try {
+            await onAddRole({ key: newKey.trim(), value: newValue.trim() })
+            setNewKey("")
+            setNewValue("")
+            toast.success("Role added")
+        } catch (err) {
+            toast.error((err as Error).message)
+        } finally {
+            setAdding(false)
+        }
+    }
+
+    const inp = "flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+
+    return (
+        <div className="space-y-4">
+            {/* Add role */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <ShieldCheck size={15} className="text-gray-400" /> Add Job Role
+                </h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <input className={inp} placeholder="Key (e.g. HAIR_STYLIST)"
+                        value={newKey} onChange={(e) => setNewKey(e.target.value)} />
+                    <input className={inp} placeholder="Label (e.g. Hair Stylist)"
+                        value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+                    <button
+                        onClick={handleAdd}
+                        disabled={adding || !newKey.trim() || !newValue.trim()}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-indigo-950 text-white rounded-lg hover:bg-indigo-800 transition disabled:opacity-50 whitespace-nowrap"
+                    >
+                        {adding ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        Add Role
+                    </button>
+                </div>
+            </div>
+
+            {/* Roles list */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck size={15} className="text-gray-400" />
+                        <span className="text-sm font-semibold text-gray-900">
+                            Job Roles <span className="ml-1 text-xs font-normal text-gray-400">({roles.length})</span>
+                        </span>
+                    </div>
+                    <button
+                        onClick={onRefresh}
+                        disabled={loading}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                    >
+                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="p-10 text-center">
+                        <Loader2 size={24} className="animate-spin mx-auto text-indigo-400 mb-2" />
+                        <p className="text-sm text-gray-400">Loading roles…</p>
+                    </div>
+                ) : roles.length === 0 ? (
+                    <div className="p-10 text-center">
+                        <ShieldCheck size={28} className="mx-auto text-gray-200 mb-2" />
+                        <p className="text-sm text-gray-400">No job roles configured for this salon</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-50">
+                        {roles.map((role) => (
+                            <div key={role.key} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition">
+                                <p className="text-sm font-medium text-gray-900">{role.value}</p>
+                                <span className="text-[10px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                                    {role.key}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
