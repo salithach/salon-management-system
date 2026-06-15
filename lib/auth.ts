@@ -6,7 +6,8 @@ import {Options} from "@/store/metadataStore";
 export const isAdmin = (user: AuthUser | null | undefined): boolean =>
     user?.roles?.some((r) => r.name === "ROLE_ADMIN") ?? false
 
-export const headersWithAuth = (headers: object, tenantId: string, options: Options) => {
+export const headersWithAuth = (headers: object, options: Options) => {
+    const tenantId = options && options.tenantId ? options.tenantId : ""
     if (isAdmin(options?.user)) {
         return  {
             ...headers,

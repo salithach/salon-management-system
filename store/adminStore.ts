@@ -1,6 +1,10 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { useAuthStore } from "@/store/authStore"
+import {headersWithAuth, isAdmin} from "@/lib/auth";
+import {CONTENT_TYPES, REQUEST_HEADERS} from "@/lib/constants";
+import {Options} from "@/store/metadataStore";
+import {apiFetch} from "@/lib/apiFetch";
 
 const authHeaders = (): Record<string, string> => {
     const token = useAuthStore.getState().token
@@ -80,7 +84,7 @@ type AdminState = {
     fetchSalonById: (id: string) => Promise<void>
     setSelectedSalon: (salon: Salon) => void
     updateSalon: (id: string, data: Partial<Salon>) => Promise<void>
-    fetchSalonStaff: (salonId: string) => Promise<void>
+    fetchSalonStaff: (salonId: string, options: Options) => Promise<void>
     clearSelected: () => void
 }
 
@@ -104,7 +108,7 @@ export const useAdminStore = create<AdminState>()(
         if (!options?.force && get().salons.length > 0) return
         set({ salonsLoading: true, salonsError: null })
         try {
-            const res = await fetch("/api/admin/salons", { headers: authHeaders() })
+            const res = await apiFetch("/api/admin/salons", { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) throw new Error(data?.message || "Failed to fetch salons")
             const raw: unknown[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
@@ -123,7 +127,7 @@ export const useAdminStore = create<AdminState>()(
         if (get().selectedSalonLoading) return
         set({ selectedSalonLoading: true })
         try {
-            const res = await fetch(`/api/admin/salons/${id}`, { headers: authHeaders() })
+            const res = await apiFetch(`/api/admin/salons/${id}`, { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) throw new Error(data?.message || "Failed to fetch salon")
             const raw = data?.data ?? data
@@ -136,7 +140,7 @@ export const useAdminStore = create<AdminState>()(
     updateSalon: async (id: string, payload: Partial<Salon>) => {
         set({ saving: true })
         try {
-            const res = await fetch(`/api/admin/salons/${id}`, {
+            const res = await apiFetch(`/api/admin/salons/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", ...authHeaders() },
                 body: JSON.stringify(payload),
@@ -157,11 +161,17 @@ export const useAdminStore = create<AdminState>()(
         }
     },
 
-    fetchSalonStaff: async (salonId: string) => {
+    fetchSalonStaff: async (salonId: string, options: Options) => {
         if (get().salonStaffLoading) return
         set({ salonStaffLoading: true })
         try {
-            const res = await fetch(`/api/admin/salons/${salonId}/staff`, { headers: authHeaders() })
+            const jwtHeaders = authHeaders();
+            const tenantHeaders = headersWithAuth(jwtHeaders, options)
+            const headers = {
+                ...jwtHeaders,
+                ...tenantHeaders
+            }
+            const res = await apiFetch(`/api/admin/salons/${salonId}/staff`, { headers })
             const data = await res.json()
             if (!res.ok) throw new Error(data?.message || "Failed to fetch staff")
             const raw: unknown[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []

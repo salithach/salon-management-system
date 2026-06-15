@@ -17,7 +17,7 @@ type Tab = "info" | "staff" | "services"
 export default function AdminSalonDetailPage() {
     const { id } = useParams<{ id: string }>()
     const router = useRouter()
-    const { _hasHydrated } = useAuthStore()
+    const { _hasHydrated, user } = useAuthStore()
     const {
         selectedSalon, selectedSalonLoading,
         salonStaff, salonStaffLoading,
@@ -32,13 +32,14 @@ export default function AdminSalonDetailPage() {
     useEffect(() => {
         if (!_hasHydrated) return
         const current = useAdminStore.getState().selectedSalon
+        const options = { force: false, tenantId: selectedSalon?.username, user }
         if (current && current.id === id) {
             // Salon already passed from the list — only fetch staff
-            fetchSalonStaff(id).then(() =>{})
+            fetchSalonStaff(id, options).then(() =>{})
         } else {
             // Direct URL access or different salon — fetch both
             fetchSalonById(id).then(() =>{})
-            fetchSalonStaff(id).then(() =>{})
+            fetchSalonStaff(id, options).then(() =>{})
         }
     }, [_hasHydrated, id]) // eslint-disable-line react-hooks/exhaustive-deps
 
