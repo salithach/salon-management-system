@@ -25,7 +25,7 @@ export default function AdminSalonDetailPage() {
         salonStaff, salonStaffLoading,
         salonRoles, salonRolesLoading,
         saving,
-        fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff,
+        fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff, addSalonService,
         fetchSalonRoles, addSalonRole, activateUser,
     } = useAdminStore()
 
@@ -45,6 +45,7 @@ export default function AdminSalonDetailPage() {
 
     const [activeTab, setActiveTab] = useState<Tab>("info")
     const [form, setForm] = useState<Partial<Salon>>({})
+    const options = { force: false, tenantId: selectedSalon?.username, user }
 
     // Load on mount — read store imperatively to avoid stale closure from transition render
     useEffect(() => {
@@ -207,7 +208,7 @@ export default function AdminSalonDetailPage() {
                     salonId={id}
                     roles={salonRoles}
                     loading={salonRolesLoading}
-                    onRefresh={() => fetchSalonRoles(id)}
+                    onRefresh={() => fetchSalonRoles(id, options)}
                     onAddRole={(entry: JobRole) => addSalonRole(id, entry)}
                 />
             )}
@@ -545,8 +546,7 @@ function StaffTab({
 
 /* ───────────────────────────── Services Tab ─────────────────────────── */
 function ServicesTab({ salonId }: { salonId: string }) {
-    const { salonServices, salonServicesLoading, fetchSalonMetaData } = useAdminStore()
-    const { addJobType } = useMetadataStore()
+    const { salonServices, salonServicesLoading, fetchSalonMetaData, addSalonService } = useAdminStore()
     const { user } = useAuthStore()
     const [newKey, setNewKey]           = useState("")
     const [newValue, setNewValue]       = useState("")
@@ -563,13 +563,11 @@ function ServicesTab({ salonId }: { salonId: string }) {
         if (!newKey.trim() || !newValue.trim()) return
         setAdding(true)
         try {
-            await addJobType({
+            await addSalonService(salonId, {
                 key:   newKey.trim(),
                 value: newValue.trim(),
                 ...(newCategory.trim() ? { category: newCategory.trim() } : {}),
-            }, { force: false, tenantId, user })
-            // Refresh from backend after adding
-            await fetchSalonMetaData(salonId, options).then(() => {})
+            }, options)
             setNewKey("")
             setNewValue("")
             setNewCategory("")

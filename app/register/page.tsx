@@ -97,7 +97,7 @@ export default function RegisterPage() {
             await register(payload)
             if (!useAuthStore.getState().error) {
                 toast.success("Account created!", {
-                    description: `Welcome to SalonHQ, ${owner.name}. Please sign in to continue.`,
+                    description: `Thank you for joining with SalonHQ, ${owner.name}. Please contact support to activate your account.`,
                 })
                 setDone(true)
             }
@@ -108,9 +108,9 @@ export default function RegisterPage() {
     if (done) return (
         <SuccessScreen
             title="You're all set!"
-            subtitle="Your salon account is ready. Sign in now to start managing appointments, staff, and more."
+            subtitle="Please contact support to activate your account."
             entityName={salon.salonName}
-            entityLabel="Salon"
+            entityLabel="Account"
             bullets={[
                 { label: "Username",    value: `@${account.username}` },
                 { label: "Email",       value: account.email },

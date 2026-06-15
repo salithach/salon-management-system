@@ -116,7 +116,8 @@ type AdminState = {
     fetchSalonStaff: (salonId: string, options: Options) => Promise<void>
     fetchSalonMetaData: (salonId: string, options: Options) => Promise<void>
     addSalonStaff: (salonId: string, options: Options, payload: AddStaffPayload) => Promise<void>
-    fetchSalonRoles: (salonId: string) => Promise<void>
+    addSalonService: (salonId: string, entry: JobType, options: Options) => Promise<void>
+    fetchSalonRoles: (salonId: string, options: Options) => Promise<void>
     addSalonRole: (salonId: string, entry: JobRole) => Promise<void>
     activateUser: (salonId: string) => Promise<void>
     clearSelected: () => void
@@ -244,14 +245,15 @@ export const useAdminStore = create<AdminState>()(
     },
 
     addSalonStaff: async (salonId: string, options: Options, payload: AddStaffPayload) => {
-        const jwtHeaders = authHeaders()
-        const tenantHeaders = headersWithAuth(jwtHeaders, options) as Record<string, string>
+        const jwtHeaders = authHeaders();
+        const tenantHeaders = headersWithAuth(jwtHeaders, options)
+        const headers = {
+            ...jwtHeaders,
+            ...tenantHeaders
+        }
         const res = await apiFetch(`/api/admin/salons/${salonId}/staff`, {
             method: "POST",
-            headers: {
-                ...jwtHeaders,
-                ...tenantHeaders,
-            },
+            headers,
             body: JSON.stringify({ ...payload, status: "Available" }),
         })
         const data = await res.json().catch(() => ({}))
@@ -261,18 +263,17 @@ export const useAdminStore = create<AdminState>()(
         set((state) => ({ salonStaff: [...state.salonStaff, newMember as AdminStaffMember] }))
     },
 
-    fetchSalonRoles: async (salonId: string) => {
+    fetchSalonRoles: async (salonId: string, options: Options) => {
         if (get().salonRolesLoading) return
         set({ salonRolesLoading: true })
         try {
-            const jwt      = authHeaders()
-            const tenantId = get().selectedSalon?.username ?? ""
-            const res = await apiFetch(`/api/admin/salons/${salonId}/roles`, {
-                headers: {
-                    ...jwt,
-                    ...(tenantId ? { [REQUEST_HEADERS.TENANT_ID]: tenantId } : {}),
-                },
-            })
+            const jwtHeaders = authHeaders();
+            const tenantHeaders = headersWithAuth(jwtHeaders, options)
+            const headers = {
+                ...jwtHeaders,
+                ...tenantHeaders
+            }
+            const res = await apiFetch(`/api/admin/salons/${salonId}/roles`, { headers })
             const data = await res.json()
             if (!res.ok) throw new Error(data?.message || "Failed to fetch roles")
             const payload = data?.data ?? data ?? {}
@@ -282,6 +283,23 @@ export const useAdminStore = create<AdminState>()(
         } catch {
             set({ salonRolesLoading: false })
         }
+    },
+
+    addSalonService: async (salonId: string, entry: JobType, options: Options) => {
+        const jwtHeaders = authHeaders();
+        const tenantHeaders = headersWithAuth(jwtHeaders, options)
+        const headers = {
+            ...jwtHeaders,
+            ...tenantHeaders
+        }
+        const res = await apiFetch(`/api/admin/salons/${salonId}/services`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify([entry]),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.message || data?.errors?.[0]?.message || "Failed to add service")
+        set((state) => ({ salonServices: [...state.salonServices, entry] }))
     },
 
     addSalonRole: async (salonId: string, entry: JobRole) => {

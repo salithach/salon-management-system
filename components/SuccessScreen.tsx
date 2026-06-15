@@ -53,16 +53,18 @@ export default function SuccessScreen({
                     {/* Heading */}
                     <div className="space-y-1.5">
                         <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                        {subtitle && (
-                            <p className="text-sm text-gray-500 leading-relaxed">{subtitle}</p>
-                        )}
+                        <hr className="text-gray-300 mt-4 mb-6" />
                         {entityName && (
                             <p className="text-sm text-gray-500">
                                 {entityLabel}{" "}
                                 <span className="font-semibold text-gray-800">{entityName}</span>
-                                {" "}has been created successfully.
+                                {" "}is created successfully. You are ready to use SalonHQ!
                             </p>
                         )}
+                        {subtitle && (
+                            <p className="text-xs text-gray-500 leading-relaxed">{subtitle}</p>
+                        )}
+
                     </div>
 
                     {/* Bullet details */}
