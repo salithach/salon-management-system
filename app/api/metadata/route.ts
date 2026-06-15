@@ -9,16 +9,12 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const auth = req.headers.get(REQUEST_HEADERS.AUTHORIZATION) ?? ""
-        const tenantId = req.headers.get(REQUEST_HEADERS.TENANT_ID) ?? ""
+        const auth = req.headers.get("Authorization") ?? ""
         const res = await fetch(`${API_BASE}/api/v1/metadata`, {
             method: "GET",
             headers: {
-                [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
-                ...(auth ? {
-                    [REQUEST_HEADERS.AUTHORIZATION]: auth,
-                    [REQUEST_HEADERS.TENANT_ID]: tenantId
-                } : {})
+                [REQUEST_HEADERS.CONTENT_TYPE]: [CONTENT_TYPES.JSON],
+                ...(auth ? { Authorization: auth } : {})
             },
         })
 

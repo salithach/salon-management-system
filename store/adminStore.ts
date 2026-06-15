@@ -1,8 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { useAuthStore } from "@/store/authStore"
-import {headersWithAuth, isAdmin} from "@/lib/auth";
-import {CONTENT_TYPES, REQUEST_HEADERS} from "@/lib/constants";
+import {headersWithAuth} from "@/lib/auth";
 import {Options} from "@/store/metadataStore";
 import {apiFetch} from "@/lib/apiFetch";
 
@@ -67,6 +66,12 @@ export type AdminStaffMember = {
     role?: { key?: string; name?: string } | string
 }
 
+export type JobType = {
+    key: string
+    value: string
+    category?: string
+}
+
 type AdminState = {
     salons: Salon[]
     salonsLoading: boolean
@@ -78,6 +83,9 @@ type AdminState = {
     salonStaff: AdminStaffMember[]
     salonStaffLoading: boolean
 
+    salonServices: JobType[]
+    salonServicesLoading: boolean
+
     saving: boolean
 
     fetchSalons: (options?: { force?: boolean }) => Promise<void>
@@ -85,6 +93,7 @@ type AdminState = {
     setSelectedSalon: (salon: Salon) => void
     updateSalon: (id: string, data: Partial<Salon>) => Promise<void>
     fetchSalonStaff: (salonId: string, options: Options) => Promise<void>
+    fetchSalonMetaData: (salonId: string, options: Options) => Promise<void>
     clearSelected: () => void
 }
 
@@ -100,6 +109,9 @@ export const useAdminStore = create<AdminState>()(
 
     salonStaff: [],
     salonStaffLoading: false,
+
+    salonServices: [],
+    salonServicesLoading: false,
 
     saving: false,
 
@@ -181,11 +193,35 @@ export const useAdminStore = create<AdminState>()(
         }
     },
 
+    fetchSalonMetaData: async (salonId: string, options: Options) => {
+        if (get().salonServicesLoading) return
+        set({ salonServicesLoading: true })
+        try {
+            const jwtHeaders = authHeaders();
+            const tenantHeaders = headersWithAuth(jwtHeaders, options)
+            const headers = {
+                ...jwtHeaders,
+                ...tenantHeaders
+            }
+            const res = await apiFetch(`/api/admin/salons/${salonId}/metadata`, { headers })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data?.message || "Failed to fetch services")
+            const payload = data?.data ?? data ?? {}
+            const raw: unknown[] = Array.isArray(payload?.jobTypes) ? payload.jobTypes
+                : Array.isArray(payload) ? payload : []
+            set({ salonServices: raw as JobType[], salonServicesLoading: false })
+        } catch {
+            set({ salonServicesLoading: false })
+        }
+    },
+
     clearSelected: () => set({
         selectedSalon: null,
         salonStaff: [],
+        salonServices: [],
         selectedSalonLoading: false,
         salonStaffLoading: false,
+        salonServicesLoading: false,
     }),
     setSelectedSalon: (salon: Salon) => set({ selectedSalon: salon }),
         }),
@@ -195,4 +231,3 @@ export const useAdminStore = create<AdminState>()(
         }
     )
 )
-

@@ -144,11 +144,15 @@ export default function AdminSalonDetailPage() {
             )}
 
             {activeTab === "staff" && (
-                <StaffTab staff={salonStaff} loading={salonStaffLoading} />
+                <StaffTab
+                    staff={salonStaff}
+                    loading={salonStaffLoading}
+                    onRefresh={() => fetchSalonStaff(id, { force: false, tenantId: selectedSalon?.username, user })}
+                />
             )}
 
             {activeTab === "services" && (
-                <ServicesTab salonId={id} tenantId={selectedSalon?.username} />
+                <ServicesTab salonId={id} />
             )}
         </>
     )
@@ -271,94 +275,106 @@ function InfoTab({
 function StaffTab({
     staff,
     loading,
+    onRefresh,
 }: {
     staff: AdminStaffMember[]
     loading: boolean
+    onRefresh: () => void
 }) {
-    if (loading) {
-        return (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
-                <Loader2 size={24} className="animate-spin mx-auto text-indigo-400 mb-2" />
-                <p className="text-sm text-gray-400">Loading staff…</p>
-            </div>
-        )
-    }
-
-    if (staff.length === 0) {
-        return (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
-                <UserCheck size={28} className="mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">No staff members found for this salon</p>
-            </div>
-        )
-    }
-
     return (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                <Users size={15} className="text-gray-400" />
-                <span className="text-sm font-semibold text-gray-900">
-                    Staff Members <span className="ml-1 text-xs font-normal text-gray-400">({staff.length})</span>
-                </span>
+            {/* Header with refresh */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <Users size={15} className="text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-900">
+                        Staff Members <span className="ml-1 text-xs font-normal text-gray-400">({staff.length})</span>
+                    </span>
+                </div>
+                <button
+                    onClick={onRefresh}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                    Refresh
+                </button>
             </div>
-            <div className="divide-y divide-gray-50">
-                {staff.map((member) => {
-                    const role =
-                        typeof member.role === "object"
-                            ? member.role?.name ?? member.role?.key
-                            : member.role
-                    return (
-                        <div key={member.id ?? member.username} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm shrink-0">
-                                {(member.name?.[0] ?? "?").toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-900">{member.name}</p>
-                                <p className="text-xs text-gray-400">{member.username}</p>
-                            </div>
-                            <div className="hidden sm:block text-right">
-                                <p className="text-xs text-gray-500">{role ?? "—"}</p>
-                                {member.specialty && (
-                                    <p className="text-[10px] text-gray-400">{member.specialty}</p>
+
+            {/* Body */}
+            {loading ? (
+                <div className="p-10 text-center">
+                    <Loader2 size={24} className="animate-spin mx-auto text-indigo-400 mb-2" />
+                    <p className="text-sm text-gray-400">Loading staff…</p>
+                </div>
+            ) : staff.length === 0 ? (
+                <div className="p-10 text-center">
+                    <UserCheck size={28} className="mx-auto text-gray-200 mb-2" />
+                    <p className="text-sm text-gray-400">No staff members found for this salon</p>
+                </div>
+            ) : (
+                <div className="divide-y divide-gray-50">
+                    {staff.map((member) => {
+                        const role =
+                            typeof member.role === "object"
+                                ? member.role?.name ?? member.role?.key
+                                : member.role
+                        return (
+                            <div key={member.id ?? member.username} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm shrink-0">
+                                    {(member.name?.[0] ?? "?").toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-gray-900">{member.name}</p>
+                                    <p className="text-xs text-gray-400">{member.username}</p>
+                                </div>
+                                <div className="hidden sm:block text-right">
+                                    <p className="text-xs text-gray-500">{role ?? "—"}</p>
+                                    {member.specialty && (
+                                        <p className="text-[10px] text-gray-400">{member.specialty}</p>
+                                    )}
+                                </div>
+                                {member.phone && (
+                                    <div className="hidden md:flex items-center gap-1 text-xs text-gray-400">
+                                        <Phone size={11} />{member.phone}
+                                    </div>
                                 )}
                             </div>
-                            {member.phone && (
-                                <div className="hidden md:flex items-center gap-1 text-xs text-gray-400">
-                                    <Phone size={11} />{member.phone}
-                                </div>
-                            )}
-                        </div>
-                    )
-                })}
-            </div>
+                        )
+                    })}
+                </div>
+            )}
         </div>
     )
 }
 
 /* ───────────────────────────── Services Tab ─────────────────────────── */
-function ServicesTab({ salonId, tenantId }: { salonId: string, tenantId: string | undefined }) {
-    const { jobTypes, metadataLoading, addJobType, fetchMetadata } = useMetadataStore()
+function ServicesTab({ salonId }: { salonId: string }) {
+    const { salonServices, salonServicesLoading, fetchSalonMetaData } = useAdminStore()
+    const { addJobType } = useMetadataStore()
     const { user } = useAuthStore()
     const [newKey, setNewKey]           = useState("")
     const [newValue, setNewValue]       = useState("")
     const [newCategory, setNewCategory] = useState("")
     const [adding, setAdding]           = useState(false)
+    const tenantId = useAdminStore.getState().selectedSalon?.username
+    const options = { force: false, tenantId, user }
 
     useEffect(() => {
-        fetchMetadata({ force: true, tenantId, user }).then(() => {}) },
-        [fetchMetadata, tenantId, user]
-    )
+        fetchSalonMetaData(salonId, options).then(() => {})
+    }, [salonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleAdd = async () => {
         if (!newKey.trim() || !newValue.trim()) return
         setAdding(true)
         try {
-            const options = { force: false, tenantId, user }
             await addJobType({
-                key: newKey.trim(),
+                key:   newKey.trim(),
                 value: newValue.trim(),
                 ...(newCategory.trim() ? { category: newCategory.trim() } : {}),
-            }, options)
+            }, { force: false, tenantId, user })
+            // Refresh from backend after adding
+            await fetchSalonMetaData(salonId, options).then(() => {})
             setNewKey("")
             setNewValue("")
             setNewCategory("")
@@ -370,8 +386,6 @@ function ServicesTab({ salonId, tenantId }: { salonId: string, tenantId: string 
         }
     }
 
-    // Suppress unused-variable warning — salonId kept for future per-salon scoping
-    void salonId
 
     const inp = "flex-1 px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
 
@@ -418,32 +432,32 @@ function ServicesTab({ salonId, tenantId }: { salonId: string, tenantId: string 
                     <div className="flex items-center gap-2">
                         <Scissors size={15} className="text-gray-400" />
                         <span className="text-sm font-semibold text-gray-900">
-                            Services <span className="ml-1 text-xs font-normal text-gray-400">({jobTypes.length})</span>
+                            Services <span className="ml-1 text-xs font-normal text-gray-400">({salonServices.length})</span>
                         </span>
                     </div>
                     <button
-                        onClick={() => fetchMetadata({ force: true, tenantId, user })}
-                        disabled={metadataLoading}
+                        onClick={() => fetchSalonMetaData(salonId, options).then(() => {})}
+                        disabled={salonServicesLoading}
                         className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                     >
-                        <RefreshCw size={12} className={metadataLoading ? "animate-spin" : ""} />
+                        <RefreshCw size={12} className={salonServicesLoading ? "animate-spin" : ""} />
                         Refresh
                     </button>
                 </div>
 
-                {metadataLoading ? (
+                {salonServicesLoading ? (
                     <div className="p-10 text-center">
                         <Loader2 size={24} className="animate-spin mx-auto text-indigo-400 mb-2" />
                         <p className="text-sm text-gray-400">Loading services…</p>
                     </div>
-                ) : jobTypes.length === 0 ? (
+                ) : salonServices.length === 0 ? (
                     <div className="p-10 text-center">
                         <Scissors size={28} className="mx-auto text-gray-200 mb-2" />
                         <p className="text-sm text-gray-400">No services configured for this salon</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-50">
-                        {jobTypes.map((svc) => (
+                        {salonServices.map((svc) => (
                             <div key={svc.key} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition">
                                 <div>
                                     <p className="text-sm font-medium text-gray-900">{svc.value}</p>

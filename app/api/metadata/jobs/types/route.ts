@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
         const auth = req.headers.get("Authorization") ?? ""
         const res = await fetch(`${API_BASE}/api/v1/metadata/jobTypes`, {
             method: "GET",
-            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
+            headers: {
+                [REQUEST_HEADERS.CONTENT_TYPE]: [CONTENT_TYPES.JSON],
+                ...(auth ? { Authorization: auth } : {})
+            },
         })
 
         const data = await res.json()
@@ -40,17 +43,10 @@ export async function POST(req: NextRequest) {
     }
     try {
         const auth = req.headers.get(REQUEST_HEADERS.AUTHORIZATION) ?? ""
-        const tenantId = req.headers.get(REQUEST_HEADERS.TENANT_ID) ?? ""
         const body = await req.json()
         const res = await fetch(`${API_BASE}/api/v1/metadata/jobTypes`, {
             method: "POST",
-            headers: {
-                [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
-                ...(auth ? {
-                    [REQUEST_HEADERS.AUTHORIZATION]: auth,
-                    [REQUEST_HEADERS.TENANT_ID]: tenantId
-                } : {})
-            },
+            headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
             body: JSON.stringify(body),
         })
 
