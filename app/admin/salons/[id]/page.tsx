@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
     ArrowLeft, Building2, User, MapPin, Globe, Phone,
-    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw
+    Users, Scissors, Save, Loader2, AlertCircle, UserCheck, RefreshCw, UserPlus, X
 } from "lucide-react"
-import { useAdminStore, Salon, AdminStaffMember } from "@/store/adminStore"
+import { useAdminStore, Salon, AdminStaffMember, AddStaffPayload } from "@/store/adminStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
 import LoadingOverlay from "@/components/LoadingOverlay"
+import DropDown from "@/components/DropDown"
 
 type Tab = "info" | "staff" | "services"
 
@@ -22,7 +23,7 @@ export default function AdminSalonDetailPage() {
         selectedSalon, selectedSalonLoading,
         salonStaff, salonStaffLoading,
         saving,
-        fetchSalonById, fetchSalonStaff, updateSalon,
+        fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff,
     } = useAdminStore()
 
     const [activeTab, setActiveTab] = useState<Tab>("info")
@@ -148,6 +149,7 @@ export default function AdminSalonDetailPage() {
                     staff={salonStaff}
                     loading={salonStaffLoading}
                     onRefresh={() => fetchSalonStaff(id, { force: false, tenantId: selectedSalon?.username, user })}
+                    onAddStaff={(payload) => addSalonStaff(id, { force: false, tenantId: selectedSalon?.username, user }, payload)}
                 />
             )}
 
@@ -272,18 +274,67 @@ function InfoTab({
 }
 
 /* ────────────────────────────── Staff Tab ───────────────────────────── */
+const emptyStaffForm = { name: "", username: "", email: "", phone: "", address: "", role: "", specialty: "" }
+
 function StaffTab({
     staff,
     loading,
     onRefresh,
+    onAddStaff,
 }: {
     staff: AdminStaffMember[]
     loading: boolean
     onRefresh: () => void
+    onAddStaff: (payload: AddStaffPayload) => Promise<void>
 }) {
+    const { jobRoles, metadataLoading } = useMetadataStore()
+    const roleOptions = jobRoles.map((r) => ({ label: r.value, value: r.key }))
+
+    const [showModal, setShowModal]     = useState(false)
+    const [form, setForm]               = useState(emptyStaffForm)
+    const [formErrors, setFormErrors]   = useState<string[]>([])
+    const [formSaving, setFormSaving]   = useState(false)
+
+    const openModal = () => { setForm(emptyStaffForm); setFormErrors([]); setShowModal(true) }
+
+    const handleAdd = async () => {
+        const errs: string[] = []
+        if (!form.name.trim())     errs.push("Full name is required.")
+        if (!form.username.trim()) errs.push("Username is required.")
+        if (!form.email.trim())    errs.push("Email is required.")
+        if (!form.phone.trim())    errs.push("Phone is required.")
+        if (!form.role)            errs.push("Role is required.")
+        if (!form.specialty.trim()) errs.push("Specialty is required.")
+        if (errs.length) { setFormErrors(errs); return }
+
+        setFormSaving(true)
+        try {
+            const matched = jobRoles.find((r) => r.key === form.role)
+            await onAddStaff({
+                name:      form.name.trim(),
+                username:  form.username.trim(),
+                email:     form.email.trim(),
+                phone:     form.phone.trim(),
+                address:   form.address.trim(),
+                role:      { key: form.role, name: matched?.value ?? form.role },
+                specialty: form.specialty.trim(),
+            })
+            setShowModal(false)
+            toast.success(`${form.name.trim()} added to staff`)
+        } catch (err) {
+            setFormErrors([(err as Error).message])
+        } finally {
+            setFormSaving(false)
+        }
+    }
+
+    const inp = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-400 bg-white"
+    const lbl = "block text-xs font-medium text-gray-600 mb-1.5"
+
     return (
+        <>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Header with refresh */}
+            {/* Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <Users size={15} className="text-gray-400" />
@@ -291,14 +342,22 @@ function StaffTab({
                         Staff Members <span className="ml-1 text-xs font-normal text-gray-400">({staff.length})</span>
                     </span>
                 </div>
-                <button
-                    onClick={onRefresh}
-                    disabled={loading}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
-                >
-                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                    Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={onRefresh}
+                        disabled={loading}
+                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                    >
+                        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                        Refresh
+                    </button>
+                    <button
+                        onClick={openModal}
+                        className="flex items-center gap-1.5 text-xs font-medium bg-indigo-950 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-800 transition"
+                    >
+                        <UserPlus size={12} /> Add Staff
+                    </button>
+                </div>
             </div>
 
             {/* Body */}
@@ -315,10 +374,9 @@ function StaffTab({
             ) : (
                 <div className="divide-y divide-gray-50">
                     {staff.map((member) => {
-                        const role =
-                            typeof member.role === "object"
-                                ? member.role?.name ?? member.role?.key
-                                : member.role
+                        const role = typeof member.role === "object"
+                            ? member.role?.name ?? member.role?.key
+                            : member.role
                         return (
                             <div key={member.id ?? member.username} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
                                 <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm shrink-0">
@@ -330,9 +388,7 @@ function StaffTab({
                                 </div>
                                 <div className="hidden sm:block text-right">
                                     <p className="text-xs text-gray-500">{role ?? "—"}</p>
-                                    {member.specialty && (
-                                        <p className="text-[10px] text-gray-400">{member.specialty}</p>
-                                    )}
+                                    {member.specialty && <p className="text-[10px] text-gray-400">{member.specialty}</p>}
                                 </div>
                                 {member.phone && (
                                     <div className="hidden md:flex items-center gap-1 text-xs text-gray-400">
@@ -345,6 +401,72 @@ function StaffTab({
                 </div>
             )}
         </div>
+
+        {/* Add Staff Modal */}
+        {showModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+                <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900">Add New Staff</h3>
+                            <p className="text-xs text-gray-400 mt-0.5">Fill in the details to add a team member</p>
+                        </div>
+                        <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition">
+                            <X size={18} />
+                        </button>
+                    </div>
+                    <div className="h-px bg-gray-100" />
+
+                    {formErrors.length > 0 && (
+                        <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3 space-y-1">
+                            {formErrors.map((e) => <p key={e} className="text-xs text-red-600">{e}</p>)}
+                        </div>
+                    )}
+
+                    <div className="space-y-3 max-h-[60vh] overflow-y-auto px-1">
+                        <div><label className={lbl}>Full Name <span className="text-red-400">*</span></label>
+                            <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Jamie Lee" className={inp} /></div>
+                        <div><label className={lbl}>Username <span className="text-red-400">*</span></label>
+                            <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="e.g. jamie.lee" className={inp} /></div>
+                        <div><label className={lbl}>Email <span className="text-red-400">*</span></label>
+                            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jamie@example.com" className={inp} /></div>
+                        <div><label className={lbl}>Phone <span className="text-red-400">*</span></label>
+                            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1 555 000 1234" className={inp} /></div>
+                        <div><label className={lbl}>Address</label>
+                            <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St, City" className={inp} /></div>
+                        <div>
+                            <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+                                Role <span className="text-red-400">*</span>
+                                {metadataLoading && <Loader2 size={11} className="animate-spin text-gray-400" />}
+                            </label>
+                            <DropDown
+                                options={roleOptions}
+                                value={form.role}
+                                onChange={(v) => setForm({ ...form, role: v as string })}
+                                placeholder={metadataLoading ? "Loading roles…" : roleOptions.length === 0 ? "No roles available" : "Select a role…"}
+                                disabled={metadataLoading}
+                            />
+                        </div>
+                        <div><label className={lbl}>Specialty <span className="text-red-400">*</span></label>
+                            <input type="text" value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })} placeholder="e.g. Haircuts, Balayage" className={inp} /></div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        <button onClick={() => setShowModal(false)} className="text-sm text-gray-600 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button onClick={handleAdd} disabled={formSaving}
+                            className="flex items-center gap-2 bg-indigo-950 text-white text-sm px-5 py-2 rounded-lg hover:bg-indigo-800 transition disabled:opacity-50"
+                        >
+                            {formSaving ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                            {formSaving ? "Adding…" : "Add Staff"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     )
 }
 

@@ -12,7 +12,7 @@ const adminNavItems = [
 ]
 
 const adminPageTitles: Record<string, string> = {
-    "/admin": "All Salons",
+    "/admin": "Manage Salons",
 }
 
 function SidebarContent({
@@ -163,7 +163,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         >
                             <Menu size={22} />
                         </button>
-                        <h1 className="text-lg font-semibold text-white truncate">{pageTitle}</h1>
+                        <h1 className="text-xl font-semibold text-white truncate">{pageTitle}</h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center text-xs font-bold text-white">

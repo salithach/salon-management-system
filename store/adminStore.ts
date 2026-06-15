@@ -72,6 +72,16 @@ export type JobType = {
     category?: string
 }
 
+export type AddStaffPayload = {
+    name: string
+    username: string
+    email: string
+    phone: string
+    address: string
+    role: { key: string; name: string }
+    specialty: string
+}
+
 type AdminState = {
     salons: Salon[]
     salonsLoading: boolean
@@ -94,6 +104,7 @@ type AdminState = {
     updateSalon: (id: string, data: Partial<Salon>) => Promise<void>
     fetchSalonStaff: (salonId: string, options: Options) => Promise<void>
     fetchSalonMetaData: (salonId: string, options: Options) => Promise<void>
+    addSalonStaff: (salonId: string, options: Options, payload: AddStaffPayload) => Promise<void>
     clearSelected: () => void
 }
 
@@ -213,6 +224,24 @@ export const useAdminStore = create<AdminState>()(
         } catch {
             set({ salonServicesLoading: false })
         }
+    },
+
+    addSalonStaff: async (salonId: string, options: Options, payload: AddStaffPayload) => {
+        const jwtHeaders = authHeaders()
+        const tenantHeaders = headersWithAuth(jwtHeaders, options) as Record<string, string>
+        const res = await apiFetch(`/api/admin/salons/${salonId}/staff`, {
+            method: "POST",
+            headers: {
+                ...jwtHeaders,
+                ...tenantHeaders,
+            },
+            body: JSON.stringify({ ...payload, status: "Available" }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.message || data?.errors?.[0]?.message || "Failed to add staff")
+        // Append to local list
+        const newMember = data?.data ?? data
+        set((state) => ({ salonStaff: [...state.salonStaff, newMember as AdminStaffMember] }))
     },
 
     clearSelected: () => set({

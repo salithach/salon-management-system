@@ -34,7 +34,7 @@ export default function AdminSalonsPage() {
             {/* Header row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Registered Salons</h2>
+                    <h2 className="text-lg font-bold text-gray-900">Registered Salons</h2>
                     <p className="text-sm text-gray-500 mt-0.5">
                         {salons.length} salon{salons.length !== 1 ? "s" : ""} registered in the system
                     </p>
