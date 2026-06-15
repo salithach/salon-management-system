@@ -3,7 +3,7 @@ import {CONTENT_TYPES, REQUEST_HEADERS} from "@/lib/constants";
 
 const API_BASE = process.env.API_BASE_URL
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest) {
     if (!API_BASE) return NextResponse.json({ message: "API_BASE_URL not configured" }, { status: 500 })
     try {
         const auth = req.headers.get(REQUEST_HEADERS.AUTHORIZATION) ?? ""

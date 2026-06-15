@@ -25,7 +25,7 @@ export default function AdminSalonDetailPage() {
         salonStaff, salonStaffLoading,
         salonRoles, salonRolesLoading,
         saving,
-        fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff, addSalonService,
+        fetchSalonById, fetchSalonStaff, updateSalon, addSalonStaff,
         fetchSalonRoles, addSalonRole, activateUser,
     } = useAdminStore()
 
