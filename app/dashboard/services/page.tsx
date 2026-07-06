@@ -147,9 +147,9 @@ export default function ServicesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filtered.map((svc) => (
+                    {filtered.map((svc, index) => (
                         <div
-                            key={svc.key}
+                            key={svc.key[index] + "-" + index}
                             className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-gray-300 hover:shadow-md transition"
                         >
                             <div className="flex items-start justify-between mb-3">
