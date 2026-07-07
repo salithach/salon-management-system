@@ -74,7 +74,7 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                     </div>
                     <div>
                         <p className="text-sm font-medium leading-none text-white">My Account</p>
-                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0]?.name ?? "User"}</p>
+                        <p className="text-xs text-white/70 mt-2">{user?.username ?? "User"}</p>
                     </div>
                     <ChevronRight size={14} className="ml-auto text-white/40 group-hover:text-white transition" />
                 </Link>

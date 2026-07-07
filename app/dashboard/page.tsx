@@ -27,7 +27,8 @@ export default function DashboardPage() {
     )
     const assignedStaff = assignedToday ?? []
 
-    const { _hasHydrated: authReady } = useAuthStore()
+    const { _hasHydrated: authReady, fetchProfile, user } = useAuthStore()
+    const currency = user?.salon?.currency?.toUpperCase() || "USD"
     const { jobTypes, metadataLoading: jobTypesLoading } = useMetadataStore()
     const { jobs, jobsLoading, fetchJobs, addJob } = useJobStore()
 
@@ -41,8 +42,10 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!authReady) return
-        fetchAssignments()
-        fetchJobs()
+        if (!user) fetchProfile().then(() => {})
+        fetchAssignments().then(() => {})
+        fetchJobs().then(() => {})
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authReady])
 
     // Modal state
@@ -133,7 +136,8 @@ export default function DashboardPage() {
                         <DollarSign size={15} className="text-gray-300" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">
-                        ${allJobs.reduce((sum, j) => sum + j.price, 0).toFixed(2)}
+                        {allJobs.reduce((sum, j) => sum + j.price, 0).toFixed(2)}
+                        <span className="text-xs font-normal text-gray-400 ml-1">{currency}</span>
                     </p>
                     <p className="text-xs text-gray-500">
                         {allJobs.length === 0 ? "No revenue yet today" : `From ${allJobs.length} job${allJobs.length !== 1 ? "s" : ""}`}
@@ -201,7 +205,10 @@ export default function DashboardPage() {
                                             </div>
                                             <div className="w-px h-8 bg-gray-100 shrink-0" />
                                             <div className="text-center flex-1">
-                                                <p className="text-lg font-bold text-gray-900">${income.toFixed(0)}</p>
+                                                <p className="text-lg font-bold text-gray-900">
+                                                    {income.toFixed(0)}
+                                                    <span className="text-[10px] font-normal text-gray-400 ml-0.5">{currency}</span>
+                                                </p>
                                                 <p className="text-[10px] text-gray-400 uppercase tracking-wide">Income</p>
                                             </div>
                                         </div>
@@ -250,12 +257,12 @@ export default function DashboardPage() {
                                             <BarChart data={chartData} barSize={28}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                                                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                                                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={36}
-                                                    tickFormatter={(v) => `$${v}`} />
+                                                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={48}
+                                                    tickFormatter={(v) => `${v} ${currency}`} />
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
                                                     cursor={{ fill: "#f3f4f6" }}
-                                                    formatter={(v) => [`$${Number(v).toFixed(2)}`, "Revenue"]}
+                                                    formatter={(v) => [`${Number(v).toFixed(2)} ${currency}`, "Revenue"]}
                                                 />
                                                 <Bar dataKey="Revenue" fill="#3f3f46" radius={[4, 4, 0, 0]} />
                                             </BarChart>

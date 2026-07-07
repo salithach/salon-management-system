@@ -7,7 +7,7 @@ export type AuthUser = {
     username: string
     roles: { name: string }[]
     owner?: { name: string; phoneNumber?: string }
-    salon?: { salonName: string; salonType: string; website?: string }
+    salon?: { salonName: string; salonType: string; website?: string; currency?: string }
     location?: { address?: string; city?: string; state?: string; zipCode?: string; country?: string }
 }
 
@@ -71,8 +71,8 @@ export const useAuthStore = create<AuthState>()(
             },
 
             fetchProfile: async () => {
-                const token = get().token
-                if (!token) return
+                const { token, profileLoading } = get()
+                if (!token || profileLoading) return   // skip if no token or already fetching
                 set({ profileLoading: true })
                 try {
                     const res = await fetch("/api/users/me", {
