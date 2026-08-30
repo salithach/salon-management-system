@@ -84,6 +84,7 @@ type AppointmentState = {
     fetchAppointments: (date?: string) => Promise<void>
     addAppointment: (data: Omit<Appointment, "id" | "createdAt">) => Promise<Appointment>
     updateAppointment: (id: string, patch: Partial<Omit<Appointment, "id" | "createdAt">>) => Promise<void>
+    updateStatus: (id: string, status: AppointmentStatus) => Promise<void>
     deleteAppointment: (id: string) => Promise<void>
 }
 
@@ -172,8 +173,33 @@ export const useAppointmentStore = create<AppointmentState>()(
                 }
             },
 
-            deleteAppointment: async (id) => {
-                // Optimistically remove from local state
+            updateStatus: async (id, status) => {
+                const prev = get().appointments
+                // Optimistic update
+                set((s) => ({
+                    appointments: s.appointments.map((a) =>
+                        a.id === id ? { ...a, status } : a
+                    ),
+                }))
+                try {
+                    const res = await apiFetch(`/api/appointments/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json", ...authHeaders() },
+                        body: JSON.stringify({ status }),
+                    })
+                    const json = await res.json().catch(() => ({}))
+                    if (!res.ok) {
+                        set({ appointments: prev })
+                        const msg = json?.message || json?.errors?.[0]?.message || "Failed to update status"
+                        throw new Error(msg)
+                    }
+                } catch (err) {
+                    set({ appointments: prev })
+                    throw err
+                }
+            },
+
+            deleteAppointment: async (id) => {                // Optimistically remove from local state
                 const prev = get().appointments
                 set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }))
                 try {
