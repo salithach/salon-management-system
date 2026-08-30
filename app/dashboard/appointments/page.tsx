@@ -307,7 +307,7 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
 
 export default function AppointmentsPage() {
     const today = toYMD(new Date())
-    const { appointments, appointmentsLoading, fetchAppointments, deleteAppointment, updateAppointment, updateStatus } = useAppointmentStore()
+    const { appointments, appointmentsLoading, fetchAppointments, deleteAppointment, updateStatus } = useAppointmentStore()
     const { jobTypes } = useMetadataStore()
     const [selectedDate, setSelectedDate] = useState(today)
     const [modal, setModal] = useState<{ form: BookingForm; editId: string | null } | null>(null)
