@@ -16,8 +16,8 @@ export type Appointment = {
     date: string          // YYYY-MM-DD
     time: string          // HH:MM (24h)
     client: Client
-    service: string       // service key or label
-    stylistName: string
+    service: string[]     // one or more service labels
+    assignee: string
     status: AppointmentStatus
     notes?: string
     createdAt: string
@@ -44,37 +44,36 @@ function normalizeStatus(raw: string): AppointmentStatus {
 function normalizeAppointment(raw: unknown): Appointment {
     const a = raw as Record<string, unknown>
 
-    // ── stylistName: may come as a nested object or flat string ──────────────
+    // ── stylistName: assignee.name / stylist.name / staff.name / flat string ──
     const stylistName = String(
         a.stylistName
-        ?? (a.assignee  as Record<string, string> | undefined)?.name
-        ?? (a.stylist   as Record<string, string> | undefined)?.name
-        ?? (a.staff     as Record<string, string> | undefined)?.name
+        ?? (a.assignee as Record<string, string> | undefined)?.name
+        ?? (a.stylist  as Record<string, string> | undefined)?.name
+        ?? (a.staff    as Record<string, string> | undefined)?.name
         ?? ""
     )
 
-    // ── service: may come as a nested object or flat string ──────────────────
-    const service = String(
-        a.service
-        ?? (a.serviceType as Record<string, string> | undefined)?.value
-        ?? (a.serviceType as Record<string, string> | undefined)?.name
-        ?? a.serviceName
-        ?? ""
-    )
+    // ── service: normalise to string[] regardless of API shape ───────────────
+    const rawService = a.service ?? a.serviceType ?? a.serviceName ?? []
+    const service: string[] = Array.isArray(rawService)
+        ? (rawService as unknown[]).map((s) =>
+            typeof s === "object" && s !== null
+                ? String((s as Record<string, unknown>).value ?? (s as Record<string, unknown>).name ?? "")
+                : String(s)
+          ).filter(Boolean)
+        : String(rawService).trim()
+            ? [String(rawService)]
+            : []
 
-    // ── client: may come as a nested object or flat fields ───────────────────
+    // ── client: nested object or flat fields ─────────────────────────────────
     const rawClient = a.client as Record<string, string> | undefined
     const client: Client = rawClient && typeof rawClient === "object"
-        ? {
-            name:  rawClient.name  ?? "",
-            phone: rawClient.phone ?? undefined,
-            email: rawClient.email ?? undefined,
-        }
+        ? { name: rawClient.name ?? "", phone: rawClient.phone ?? undefined, email: rawClient.email ?? undefined }
         : {
             name:  String(a.clientName ?? a.client_name ?? ""),
             phone: a.clientPhone ? String(a.clientPhone) : undefined,
             email: a.clientEmail ? String(a.clientEmail) : undefined,
-        }
+          }
 
     return {
         id:         String(a.id ?? ""),
@@ -82,7 +81,7 @@ function normalizeAppointment(raw: unknown): Appointment {
         time:       String(a.time ?? "").slice(0, 5) || "09:00",
         client,
         service,
-        stylistName,
+        assignee: String(a.assignee ?? ""),
         status:     normalizeStatus(String(a.status ?? "")),
         notes:      a.notes ? String(a.notes) : undefined,
         createdAt:  String(a.createdAt ?? new Date().toISOString()),
@@ -206,6 +205,18 @@ export const useAppointmentStore = create<AppointmentState>()(
                 }
             },
         }),
-        { name: "appointments-storage" }
+        {
+            name: "appointments-storage",
+            // Migrate stale data: ensure service is always string[]
+            onRehydrateStorage: () => (state) => {
+                if (!state) return
+                state.appointments = state.appointments.map((a) => ({
+                    ...a,
+                    service: Array.isArray(a.service)
+                        ? a.service
+                        : a.service ? [a.service as unknown as string] : [],
+                }))
+            },
+        }
     )
 )

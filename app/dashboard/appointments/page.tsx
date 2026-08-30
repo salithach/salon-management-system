@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import {
     CalendarDays, ChevronLeft, ChevronRight, Plus, X,
     Clock, User, Scissors, Phone, FileText, Trash2, Pencil,
-    CheckCircle2, AlertCircle, XCircle, Loader2,
+    CheckCircle2, AlertCircle, XCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/appointmentStore"
@@ -37,6 +37,13 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; i
     CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-600",        icon: <XCircle      size={11} /> },
 }
 
+// Safe helper — guards against stale localStorage data where service may be a string
+function joinServices(service: unknown): string {
+    if (Array.isArray(service)) return service.join(", ")
+    if (typeof service === "string" && service) return service
+    return ""
+}
+
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
     const h = String(i).padStart(2, "0")
     return [`${h}:00`, `${h}:30`]
@@ -46,12 +53,12 @@ const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
 
 type BookingForm = {
     date: string; time: string; clientName: string; clientPhone: string; clientEmail: string
-    service: string; stylistName: string; status: AppointmentStatus; notes: string
+    service: string[]; assignee: string; status: AppointmentStatus; notes: string
 }
 
 const emptyForm = (date: string): BookingForm => ({
     date, time: "09:00", clientName: "", clientPhone: "", clientEmail: "",
-    service: "", stylistName: "", status: "CONFIRMED", notes: "",
+    service: [], assignee: "", status: "CONFIRMED", notes: "",
 })
 
 function BookingModal({ initial, editId, onClose }: { initial: BookingForm; editId: string | null; onClose: () => void }) {
@@ -76,8 +83,8 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
         const errs: string[] = []
         if (!form.clientName.trim()) errs.push("Client name is required.")
         if (!form.date) errs.push("Date is required.")
-        if (!form.service.trim()) errs.push("Service is required.")
-        if (!form.stylistName.trim()) errs.push("Stylist is required.")
+        if (form.service.length === 0) errs.push("At least one service is required.")
+        if (!form.assignee.trim()) errs.push("Stylist is required.")
         if (errs.length) { setErrors(errs); return }
         setSaving(true)
         try {
@@ -85,7 +92,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                 await updateAppointment(editId, {
                     date: form.date, time: form.time,
                     client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
-                    service: form.service, stylistName: form.stylistName,
+                    service: form.service, assignee: form.assignee,
                     status: form.status, notes: form.notes || undefined,
                 })
                 toast.success("Appointment updated")
@@ -93,7 +100,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                 await addAppointment({
                     date: form.date, time: form.time,
                     client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
-                    service: form.service, stylistName: form.stylistName,
+                    service: form.service, assignee: form.assignee,
                     status: form.status, notes: form.notes || undefined,
                 })
                 toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
@@ -160,6 +167,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                         <DropDown
                             options={jobTypes.map((jt) => ({ label: jt.value, value: jt.value }))}
                             value={form.service}
+                            multiple
                             onChange={(v) => setForm((p) => ({ ...p, service: v }))}
                             placeholder={metadataLoading ? "Loading services…" : "Select a service…"}
                             disabled={metadataLoading}
@@ -169,8 +177,8 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                         <label className={lbl}><User size={11} className="inline mr-1" />Stylist <span className="text-red-400">*</span></label>
                         <DropDown
                             options={staff.map((s) => ({ label: s.name, value: s.name }))}
-                            value={form.stylistName}
-                            onChange={(v) => setForm((p) => ({ ...p, stylistName: v }))}
+                            value={form.assignee}
+                            onChange={(v) => setForm((p) => ({ ...p, assignee: v }))}
                             placeholder={staffLoading ? "Loading staff…" : "Select a stylist…"}
                             disabled={staffLoading}
                         />
@@ -272,8 +280,8 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="flex items-center gap-1.5 text-gray-600"><Clock size={11} className="text-gray-400 shrink-0" /><span>{formatTime(appt.time)}</span></div>
-                <div className="flex items-center gap-1.5 text-gray-600 col-span-2"><Scissors size={11} className="text-gray-400 shrink-0" /><span className="truncate">{appt.service}</span></div>
-                <div className="flex items-center gap-1.5 text-gray-600 col-span-3"><User size={11} className="text-gray-400 shrink-0" /><span>{appt.stylistName}</span></div>
+                <div className="flex items-center gap-1.5 text-gray-600 col-span-2"><Scissors size={11} className="text-gray-400 shrink-0" /><span className="truncate">{joinServices(appt.service)}</span></div>
+                <div className="flex items-center gap-1.5 text-gray-600 col-span-3"><User size={11} className="text-gray-400 shrink-0" /><span>{appt.assignee}</span></div>
             </div>
             {appt.notes && <p className="text-xs text-gray-400 italic truncate">{appt.notes}</p>}
             {appt.status !== "CANCELLED" && (
@@ -324,8 +332,8 @@ export default function AppointmentsPage() {
             clientName: appt.client.name,
             clientPhone: appt.client.phone ?? "",
             clientEmail: appt.client.email ?? "",
-            service: appt.service,
-            stylistName: appt.stylistName,
+            service: Array.isArray(appt.service) ? appt.service : appt.service ? [appt.service as unknown as string] : [],
+            assignee: appt.assignee,
             status: appt.status,
             notes: appt.notes ?? "",
         },
@@ -371,7 +379,7 @@ export default function AppointmentsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium text-gray-800 truncate">{a.client.name}</p>
-                                        <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {a.service}</p>
+                                        <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {joinServices(a.service)}</p>
                                     </div>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).color}`}>{(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).label}</span>
                                 </button>
