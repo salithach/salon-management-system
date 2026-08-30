@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import {
     CalendarDays, ChevronLeft, ChevronRight, Plus, X,
     Clock, User, Scissors, Phone, FileText, Trash2, Pencil,
-    CheckCircle2, AlertCircle, XCircle,
+    CheckCircle2, AlertCircle, XCircle, Search,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/appointmentStore"
@@ -312,17 +312,32 @@ export default function AppointmentsPage() {
     const [selectedDate, setSelectedDate] = useState(today)
     const [modal, setModal] = useState<{ form: BookingForm; editId: string | null } | null>(null)
     const [confirmDel, setConfirmDel] = useState<string | null>(null)
+    const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "ALL">("ALL")
+    const [clientSearch, setClientSearch] = useState("")
 
-    // Fetch appointments for the selected date whenever it changes
+    // Fetch appointments whenever the selected date changes
     useEffect(() => {
         fetchAppointments(selectedDate).then(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDate])
 
-    const dayAppts = useMemo(
+    // Helper that changes date and resets all filters atomically
+    const changeDate = (date: string) => {
+        setSelectedDate(date)
+        setStatusFilter("ALL")
+        setClientSearch("")
+    }
+
+    const allDayAppts = useMemo(
         () => appointments.filter((a) => a.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time)),
         [appointments, selectedDate]
     )
+
+    const dayAppts = useMemo(() => allDayAppts.filter((a) => {
+        const matchStatus = statusFilter === "ALL" || a.status === statusFilter
+        const matchSearch = !clientSearch.trim() || a.client.name.toLowerCase().includes(clientSearch.toLowerCase())
+        return matchStatus && matchSearch
+    }), [allDayAppts, statusFilter, clientSearch])
 
     const pendingCount = appointments.filter((a) => a.status === "PENDING").length
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay())
@@ -368,45 +383,95 @@ export default function AppointmentsPage() {
 
                 {/* Left: calendar + upcoming */}
                 <div className="space-y-4">
-                    <MiniCalendar selected={selectedDate} onSelect={setSelectedDate} appointmentDates={apptDates} />
+                    <MiniCalendar selected={selectedDate} onSelect={changeDate} appointmentDates={apptDates} />
 
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Upcoming</p>
-                        {appointments
-                            .filter((a) => a.date >= today && a.status !== "CANCELLED")
-                            .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-                            .slice(0, 5)
-                            .map((a) => (
-                                <button key={a.id} onClick={() => setSelectedDate(a.date)}
-                                    className="w-full flex items-start gap-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition text-left">
-                                    <div className="flex flex-col items-center text-center min-w-8">
-                                        <span className="text-[10px] text-gray-400 uppercase">{new Date(a.date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}</span>
-                                        <span className="text-sm font-bold text-gray-900 leading-tight">{new Date(a.date + "T00:00:00").getDate()}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-gray-800 truncate">{a.client.name}</p>
-                                        <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {resolveServices(a.services, jobTypes)}</p>
-                                    </div>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).color}`}>{(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).label}</span>
-                                </button>
-                            ))}
-                        {appointments.filter((a) => a.date >= today && a.status !== "CANCELLED").length === 0 && (
-                            <p className="text-xs text-gray-400 text-center py-4">No upcoming appointments</p>
-                        )}
+                        {(() => {
+                            const upcoming = appointments
+                                .filter((a) => a.date >= today && a.status !== "CANCELLED")
+                                .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+                            const shown = upcoming.slice(0, 3)
+                            const remaining = upcoming.length - shown.length
+                            return (
+                                <>
+                                    {shown.map((a) => (
+                                        <button key={a.id} onClick={() => changeDate(a.date)}
+                                            className="w-full flex items-start gap-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition text-left">
+                                            <div className="flex flex-col items-center text-center min-w-8">
+                                                <span className="text-[10px] text-gray-400 uppercase">{new Date(a.date + "T00:00:00").toLocaleDateString("en-US", { month: "short" })}</span>
+                                                <span className="text-sm font-bold text-gray-900 leading-tight">{new Date(a.date + "T00:00:00").getDate()}</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-medium text-gray-800 truncate">{a.client.name}</p>
+                                                <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {resolveServices(a.services, jobTypes)}</p>
+                                            </div>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).color}`}>{(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).label}</span>
+                                        </button>
+                                    ))}
+                                    {shown.length === 0 && (
+                                        <p className="text-xs text-gray-400 text-center py-4">No upcoming appointments</p>
+                                    )}
+                                    {remaining > 0 && (
+                                        <p className="text-[10px] text-gray-400 text-center pt-2 border-t border-gray-50 mt-1">
+                                            +{remaining} more upcoming
+                                        </p>
+                                    )}
+                                </>
+                            )
+                        })()}
                     </div>
                 </div>
 
                 {/* Right: day view */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-120">
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: "calc(100vh - 13rem)", minHeight: "480px" }}>
+                    {/* Header */}
                     <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
                         <div>
                             <h2 className="text-sm font-semibold text-gray-900">{formatDateLabel(selectedDate)}</h2>
-                            <p className="text-xs text-gray-400 mt-0.5">{dayAppts.length === 0 ? "No appointments scheduled" : `${dayAppts.length} appointment${dayAppts.length > 1 ? "s" : ""}`}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                {allDayAppts.length === 0
+                                    ? "No appointments scheduled"
+                                    : `${dayAppts.length} of ${allDayAppts.length} appointment${allDayAppts.length > 1 ? "s" : ""}`}
+                            </p>
                         </div>
                         <button onClick={openNew} className="flex items-center gap-1.5 text-sm bg-zinc-800 text-white px-4 py-2 rounded-lg hover:bg-zinc-700 transition">
                             <Plus size={14} /> New Booking
                         </button>
                     </div>
+
+                    {/* Filter toolbar — only shown when there are appointments */}
+                    {allDayAppts.length > 0 && (
+                        <div className="px-4 py-3 border-b border-gray-50 flex flex-wrap items-center gap-2">
+                            {/* Search */}
+                            <div className="relative flex-1 min-w-40">
+                                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    value={clientSearch}
+                                    onChange={(e) => setClientSearch(e.target.value)}
+                                    placeholder="Search client…"
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 bg-white"
+                                />
+                            </div>
+                            {/* Status tabs */}
+                            <div className="flex gap-1 flex-wrap">
+                                {(["ALL", "CONFIRMED", "PENDING", "CANCELLED"] as const).map((s) => {
+                                    const count = s === "ALL" ? allDayAppts.length : allDayAppts.filter((a) => a.status === s).length
+                                    const active = statusFilter === s
+                                    return (
+                                        <button key={s} onClick={() => setStatusFilter(s)}
+                                            className={`text-[10px] font-medium px-2.5 py-1 rounded-full border transition ${
+                                                active ? "bg-zinc-800 text-white border-zinc-800" : "border-gray-200 text-gray-500 hover:border-gray-400"
+                                            }`}>
+                                            {s === "ALL" ? "All" : STATUS_CONFIG[s].label} <span className={active ? "opacity-70" : "text-gray-400"}>{count}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Appointment list — scrolls independently */}
                     <div className="p-4 space-y-3 flex-1 overflow-y-auto">
                         {dayAppts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
@@ -414,8 +479,10 @@ export default function AppointmentsPage() {
                                     <CalendarDays size={22} className="text-gray-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-600">No bookings for this day</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">Click &quot;New Booking&quot; to schedule one</p>
+                                    {allDayAppts.length > 0
+                                        ? <><p className="text-sm font-medium text-gray-600">No matches</p><p className="text-xs text-gray-400 mt-0.5">Try a different filter or search</p></>
+                                        : <><p className="text-sm font-medium text-gray-600">No bookings for this day</p><p className="text-xs text-gray-400 mt-0.5">Click &quot;New Booking&quot; to schedule one</p></>
+                                    }
                                 </div>
                             </div>
                         ) : dayAppts.map((appt) => (
