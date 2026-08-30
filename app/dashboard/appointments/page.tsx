@@ -12,6 +12,7 @@ import { useStaffAssignmentStore } from "@/store/staffStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
 import DropDown from "@/components/DropDown"
+import LoadingOverlay from "@/components/LoadingOverlay"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,9 +32,9 @@ function formatDateLabel(ymd: string) {
 }
 
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; icon: React.ReactNode }> = {
-    Confirmed: { label: "Confirmed", color: "bg-emerald-100 text-emerald-700", icon: <CheckCircle2 size={11} /> },
-    Pending:   { label: "Pending",   color: "bg-amber-100 text-amber-700",    icon: <AlertCircle  size={11} /> },
-    Cancelled: { label: "Cancelled", color: "bg-red-100 text-red-600",        icon: <XCircle      size={11} /> },
+    CONFIRMED: { label: "Confirmed", color: "bg-emerald-100 text-emerald-700", icon: <CheckCircle2 size={11} /> },
+    PENDING:   { label: "Pending",   color: "bg-amber-100 text-amber-700",    icon: <AlertCircle  size={11} /> },
+    CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-600",        icon: <XCircle      size={11} /> },
 }
 
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
@@ -44,27 +45,27 @@ const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
 // ─── Booking Modal ─────────────────────────────────────────────────────────────
 
 type BookingForm = {
-    date: string; time: string; clientName: string; clientPhone: string
+    date: string; time: string; clientName: string; clientPhone: string; clientEmail: string
     service: string; stylistName: string; status: AppointmentStatus; notes: string
 }
 
 const emptyForm = (date: string): BookingForm => ({
-    date, time: "09:00", clientName: "", clientPhone: "",
-    service: "", stylistName: "", status: "Confirmed", notes: "",
+    date, time: "09:00", clientName: "", clientPhone: "", clientEmail: "",
+    service: "", stylistName: "", status: "CONFIRMED", notes: "",
 })
 
 function BookingModal({ initial, editId, onClose }: { initial: BookingForm; editId: string | null; onClose: () => void }) {
     const { addAppointment, updateAppointment } = useAppointmentStore()
     const { staff, fetchStaff, staffLoading } = useStaffAssignmentStore()
-    const { jobTypes, fetchMetadata } = useMetadataStore()
+    const { jobTypes, metadataLoading, fetchMetadata } = useMetadataStore()
     const { user } = useAuthStore()
     const [form, setForm] = useState<BookingForm>(initial)
     const [errors, setErrors] = useState<string[]>([])
     const [saving, setSaving] = useState(false)
 
     useEffect(() => {
-        fetchStaff()
-        fetchMetadata({ force: false, tenantId: user?.username, user })
+        fetchStaff().then(() => {})
+        fetchMetadata({ force: false, tenantId: user?.username, user }).then(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -79,16 +80,30 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
         if (!form.stylistName.trim()) errs.push("Stylist is required.")
         if (errs.length) { setErrors(errs); return }
         setSaving(true)
-        await new Promise((r) => setTimeout(r, 300))
-        if (editId) {
-            updateAppointment(editId, form)
-            toast.success("Appointment updated")
-        } else {
-            addAppointment(form)
-            toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
+        try {
+            if (editId) {
+                await updateAppointment(editId, {
+                    date: form.date, time: form.time,
+                    client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
+                    service: form.service, stylistName: form.stylistName,
+                    status: form.status, notes: form.notes || undefined,
+                })
+                toast.success("Appointment updated")
+            } else {
+                await addAppointment({
+                    date: form.date, time: form.time,
+                    client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
+                    service: form.service, stylistName: form.stylistName,
+                    status: form.status, notes: form.notes || undefined,
+                })
+                toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
+            }
+            onClose()
+        } catch (err) {
+            toast.error((err as Error).message)
+        } finally {
+            setSaving(false)
         }
-        setSaving(false)
-        onClose()
     }
 
     const inp = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 bg-white text-gray-900"
@@ -121,6 +136,10 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                             <label className={lbl}><Phone size={11} className="inline mr-1" />Phone</label>
                             <input type="tel" value={form.clientPhone} onChange={f("clientPhone")} placeholder="e.g. 555-0101" className={inp} />
                         </div>
+                        <div className="sm:col-span-2">
+                            <label className={lbl}>✉ Email</label>
+                            <input type="email" value={form.clientEmail} onChange={f("clientEmail")} placeholder="e.g. emma@example.com" className={inp} />
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -138,38 +157,32 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                     </div>
                     <div>
                         <label className={lbl}><Scissors size={11} className="inline mr-1" />Service <span className="text-red-400">*</span></label>
-                        {jobTypes.length > 0 ? (
-                            <DropDown
-                                options={jobTypes.map((jt) => ({ label: jt.value, value: jt.value }))}
-                                value={form.service}
-                                onChange={(v) => setForm((p) => ({ ...p, service: v }))}
-                                placeholder="Select a service…"
-                            />
-                        ) : (
-                            <input type="text" value={form.service} onChange={f("service")} placeholder="e.g. Hair Coloring" className={inp} />
-                        )}
+                        <DropDown
+                            options={jobTypes.map((jt) => ({ label: jt.value, value: jt.value }))}
+                            value={form.service}
+                            onChange={(v) => setForm((p) => ({ ...p, service: v }))}
+                            placeholder={metadataLoading ? "Loading services…" : "Select a service…"}
+                            disabled={metadataLoading}
+                        />
                     </div>
                     <div>
                         <label className={lbl}><User size={11} className="inline mr-1" />Stylist <span className="text-red-400">*</span></label>
-                        {staffLoading ? (
-                            <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-                                <Loader2 size={13} className="animate-spin" /> Loading staff…
-                            </div>
-                        ) : staff.length > 0 ? (
-                            <DropDown
-                                options={staff.map((s) => ({ label: s.name, value: s.name }))}
-                                value={form.stylistName}
-                                onChange={(v) => setForm((p) => ({ ...p, stylistName: v }))}
-                                placeholder="Select a stylist…"
-                            />
-                        ) : (
-                            <input type="text" value={form.stylistName} onChange={f("stylistName")} placeholder="e.g. Mia Chen" className={inp} />
-                        )}
+                        <DropDown
+                            options={staff.map((s) => ({ label: s.name, value: s.name }))}
+                            value={form.stylistName}
+                            onChange={(v) => setForm((p) => ({ ...p, stylistName: v }))}
+                            placeholder={staffLoading ? "Loading staff…" : "Select a stylist…"}
+                            disabled={staffLoading}
+                        />
                     </div>
                     <div>
                         <label className={lbl}>Status</label>
                         <DropDown
-                            options={["Confirmed", "Pending", "Cancelled"]}
+                            options={[
+                                { label: "Confirmed", value: "CONFIRMED" },
+                                { label: "Pending",   value: "PENDING"   },
+                                { label: "Cancelled", value: "CANCELLED" },
+                            ]}
                             value={form.status}
                             onChange={(v) => setForm((p) => ({ ...p, status: v as AppointmentStatus }))}
                         />
@@ -241,16 +254,16 @@ function MiniCalendar({ selected, onSelect, appointmentDates }: { selected: stri
 // ─── Appointment Card ──────────────────────────────────────────────────────────
 
 function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: Appointment; onEdit: () => void; onDelete: () => void; onStatusChange: (s: AppointmentStatus) => void }) {
-    const cfg = STATUS_CONFIG[appt.status]
+    const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG["PENDING"]
     return (
         <div className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition space-y-3">
             <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-gray-900">{appt.clientName}</p>
+                        <p className="text-sm font-semibold text-gray-900">{appt.client.name}</p>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${cfg.color}`}>{cfg.icon} {cfg.label}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{appt.clientPhone || "—"}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{appt.client.phone || "—"}{appt.client.email ? ` · ${appt.client.email}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                     <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"><Pencil size={13} /></button>
@@ -263,12 +276,12 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
                 <div className="flex items-center gap-1.5 text-gray-600 col-span-3"><User size={11} className="text-gray-400 shrink-0" /><span>{appt.stylistName}</span></div>
             </div>
             {appt.notes && <p className="text-xs text-gray-400 italic truncate">{appt.notes}</p>}
-            {appt.status !== "Cancelled" && (
+            {appt.status !== "CANCELLED" && (
                 <div className="flex gap-2 pt-1 border-t border-gray-50">
-                    {(["Confirmed", "Pending", "Cancelled"] as AppointmentStatus[]).filter((s) => s !== appt.status).map((s) => (
+                    {(["CONFIRMED", "PENDING", "CANCELLED"] as AppointmentStatus[]).filter((s) => s !== appt.status).map((s) => (
                         <button key={s} onClick={() => onStatusChange(s)}
                             className="text-[10px] text-gray-500 border border-gray-200 px-2.5 py-1 rounded-full hover:bg-gray-50 transition">
-                            Mark {s}
+                            Mark {STATUS_CONFIG[s].label}
                         </button>
                     ))}
                 </div>
@@ -281,17 +294,23 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
 
 export default function AppointmentsPage() {
     const today = toYMD(new Date())
-    const { appointments, deleteAppointment, updateAppointment } = useAppointmentStore()
+    const { appointments, appointmentsLoading, fetchAppointments, deleteAppointment, updateAppointment } = useAppointmentStore()
     const [selectedDate, setSelectedDate] = useState(today)
     const [modal, setModal] = useState<{ form: BookingForm; editId: string | null } | null>(null)
     const [confirmDel, setConfirmDel] = useState<string | null>(null)
+
+    // Fetch appointments for the selected date whenever it changes
+    useEffect(() => {
+        fetchAppointments(selectedDate).then(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDate])
 
     const dayAppts = useMemo(
         () => appointments.filter((a) => a.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time)),
         [appointments, selectedDate]
     )
 
-    const pendingCount = appointments.filter((a) => a.status === "Pending").length
+    const pendingCount = appointments.filter((a) => a.status === "PENDING").length
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay())
     const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6)
     const weekCount = appointments.filter((a) => { const d = new Date(a.date + "T00:00:00"); return d >= weekStart && d <= weekEnd }).length
@@ -299,12 +318,23 @@ export default function AppointmentsPage() {
 
     const openNew  = () => setModal({ form: emptyForm(selectedDate), editId: null })
     const openEdit = (appt: Appointment) => setModal({
-        form: { date: appt.date, time: appt.time, clientName: appt.clientName, clientPhone: appt.clientPhone ?? "", service: appt.service, stylistName: appt.stylistName, status: appt.status, notes: appt.notes ?? "" },
+        form: {
+            date: appt.date,
+            time: appt.time?.slice(0, 5) ?? "09:00",   // normalize HH:MM:SS → HH:MM
+            clientName: appt.client.name,
+            clientPhone: appt.client.phone ?? "",
+            clientEmail: appt.client.email ?? "",
+            service: appt.service,
+            stylistName: appt.stylistName,
+            status: appt.status,
+            notes: appt.notes ?? "",
+        },
         editId: appt.id,
     })
 
     return (
         <>
+            {appointmentsLoading && <LoadingOverlay message="Loading appointments…" />}
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
@@ -329,7 +359,7 @@ export default function AppointmentsPage() {
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Upcoming</p>
                         {appointments
-                            .filter((a) => a.date >= today && a.status !== "Cancelled")
+                            .filter((a) => a.date >= today && a.status !== "CANCELLED")
                             .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
                             .slice(0, 5)
                             .map((a) => (
@@ -340,13 +370,13 @@ export default function AppointmentsPage() {
                                         <span className="text-sm font-bold text-gray-900 leading-tight">{new Date(a.date + "T00:00:00").getDate()}</span>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium text-gray-800 truncate">{a.clientName}</p>
+                                        <p className="text-xs font-medium text-gray-800 truncate">{a.client.name}</p>
                                         <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {a.service}</p>
                                     </div>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_CONFIG[a.status].color}`}>{a.status}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).color}`}>{(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).label}</span>
                                 </button>
                             ))}
-                        {appointments.filter((a) => a.date >= today && a.status !== "Cancelled").length === 0 && (
+                        {appointments.filter((a) => a.date >= today && a.status !== "CANCELLED").length === 0 && (
                             <p className="text-xs text-gray-400 text-center py-4">No upcoming appointments</p>
                         )}
                     </div>
@@ -380,7 +410,14 @@ export default function AppointmentsPage() {
                                 appt={appt}
                                 onEdit={() => openEdit(appt)}
                                 onDelete={() => setConfirmDel(appt.id)}
-                                onStatusChange={(s) => { updateAppointment(appt.id, { status: s }); toast.success(`Marked as ${s}`) }}
+                                onStatusChange={async (s) => {
+                                try {
+                                    await updateAppointment(appt.id, { status: s })
+                                    toast.success(`Marked as ${STATUS_CONFIG[s].label}`)
+                                } catch (err) {
+                                    toast.error((err as Error).message)
+                                }
+                            }}
                             />
                         ))}
                     </div>
@@ -404,7 +441,15 @@ export default function AppointmentsPage() {
                         </div>
                         <div className="flex gap-3">
                             <button onClick={() => setConfirmDel(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel</button>
-                            <button onClick={() => { deleteAppointment(confirmDel); setConfirmDel(null); toast.success("Appointment removed") }}
+                            <button onClick={async () => {
+                                try {
+                                    await deleteAppointment(confirmDel)
+                                    setConfirmDel(null)
+                                    toast.success("Appointment removed")
+                                } catch (err) {
+                                    toast.error((err as Error).message)
+                                }
+                            }}
                                 className="flex-1 py-2.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition">Remove</button>
                         </div>
                     </div>
