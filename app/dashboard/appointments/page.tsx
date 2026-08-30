@@ -37,11 +37,11 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; i
     CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-600",        icon: <XCircle      size={11} /> },
 }
 
-// Safe helper — guards against stale localStorage data where service may be a string
-function joinServices(service: unknown): string {
-    if (Array.isArray(service)) return service.join(", ")
-    if (typeof service === "string" && service) return service
-    return ""
+// Resolve service keys → human-readable labels (falls back to key if not found)
+function resolveServices(services: unknown, jobTypes: { key: string; value: string }[]): string {
+    const arr: string[] = Array.isArray(services) ? (services as string[])
+        : typeof services === "string" && services ? [services] : []
+    return arr.map((key) => jobTypes.find((jt) => jt.key === key)?.value ?? key).join(", ")
 }
 
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
@@ -53,12 +53,12 @@ const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
 
 type BookingForm = {
     date: string; time: string; clientName: string; clientPhone: string; clientEmail: string
-    service: string[]; assignee: string; status: AppointmentStatus; notes: string
+    services: string[]; assignee: string; status: AppointmentStatus; notes: string
 }
 
 const emptyForm = (date: string): BookingForm => ({
     date, time: "09:00", clientName: "", clientPhone: "", clientEmail: "",
-    service: [], assignee: "", status: "CONFIRMED", notes: "",
+    services: [], assignee: "", status: "CONFIRMED", notes: "",
 })
 
 function BookingModal({ initial, editId, onClose }: { initial: BookingForm; editId: string | null; onClose: () => void }) {
@@ -79,30 +79,31 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
     const f = (k: keyof BookingForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
         setForm((p) => ({ ...p, [k]: e.target.value }))
 
+    // Same as "Add Job" modal: key as value, label as display
+    const jobTypeOptions = jobTypes
+        .map((t) => ({ label: t.value, value: t.key }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+
     const handleSave = async () => {
         const errs: string[] = []
         if (!form.clientName.trim()) errs.push("Client name is required.")
         if (!form.date) errs.push("Date is required.")
-        if (form.service.length === 0) errs.push("At least one service is required.")
+        if (form.services.length === 0) errs.push("At least one service is required.")
         if (!form.assignee.trim()) errs.push("Stylist is required.")
         if (errs.length) { setErrors(errs); return }
         setSaving(true)
         try {
+            const payload = {
+                date: form.date, time: form.time,
+                client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
+                services: form.services, assignee: form.assignee,
+                status: form.status, notes: form.notes || undefined,
+            }
             if (editId) {
-                await updateAppointment(editId, {
-                    date: form.date, time: form.time,
-                    client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
-                    service: form.service, assignee: form.assignee,
-                    status: form.status, notes: form.notes || undefined,
-                })
+                await updateAppointment(editId, payload)
                 toast.success("Appointment updated")
             } else {
-                await addAppointment({
-                    date: form.date, time: form.time,
-                    client: { name: form.clientName, phone: form.clientPhone || undefined, email: form.clientEmail || undefined },
-                    service: form.service, assignee: form.assignee,
-                    status: form.status, notes: form.notes || undefined,
-                })
+                await addAppointment(payload)
                 toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
             }
             onClose()
@@ -163,13 +164,16 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                         </div>
                     </div>
                     <div>
-                        <label className={lbl}><Scissors size={11} className="inline mr-1" />Service <span className="text-red-400">*</span></label>
+                        <label className={lbl}>
+                            <Scissors size={11} className="inline mr-1" />Services <span className="text-red-400">*</span>
+                            {metadataLoading && <span className="text-gray-400 text-[10px] ml-1">Loading…</span>}
+                        </label>
                         <DropDown
-                            options={jobTypes.map((jt) => ({ label: jt.value, value: jt.value }))}
-                            value={form.service}
                             multiple
-                            onChange={(v) => setForm((p) => ({ ...p, service: v }))}
-                            placeholder={metadataLoading ? "Loading services…" : "Select a service…"}
+                            options={jobTypeOptions}
+                            value={form.services}
+                            onChange={(v) => setForm((p) => ({ ...p, services: v }))}
+                            placeholder={metadataLoading ? "Loading services…" : "Select services…"}
                             disabled={metadataLoading}
                         />
                     </div>
@@ -263,6 +267,7 @@ function MiniCalendar({ selected, onSelect, appointmentDates }: { selected: stri
 
 function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: Appointment; onEdit: () => void; onDelete: () => void; onStatusChange: (s: AppointmentStatus) => void }) {
     const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG["PENDING"]
+    const { jobTypes } = useMetadataStore()
     return (
         <div className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition space-y-3">
             <div className="flex items-start justify-between gap-2">
@@ -280,7 +285,7 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="flex items-center gap-1.5 text-gray-600"><Clock size={11} className="text-gray-400 shrink-0" /><span>{formatTime(appt.time)}</span></div>
-                <div className="flex items-center gap-1.5 text-gray-600 col-span-2"><Scissors size={11} className="text-gray-400 shrink-0" /><span className="truncate">{joinServices(appt.service)}</span></div>
+                <div className="flex items-center gap-1.5 text-gray-600 col-span-2"><Scissors size={11} className="text-gray-400 shrink-0" /><span className="truncate">{resolveServices(appt.services, jobTypes)}</span></div>
                 <div className="flex items-center gap-1.5 text-gray-600 col-span-3"><User size={11} className="text-gray-400 shrink-0" /><span>{appt.assignee}</span></div>
             </div>
             {appt.notes && <p className="text-xs text-gray-400 italic truncate">{appt.notes}</p>}
@@ -303,6 +308,7 @@ function AppointmentCard({ appt, onEdit, onDelete, onStatusChange }: { appt: App
 export default function AppointmentsPage() {
     const today = toYMD(new Date())
     const { appointments, appointmentsLoading, fetchAppointments, deleteAppointment, updateAppointment } = useAppointmentStore()
+    const { jobTypes } = useMetadataStore()
     const [selectedDate, setSelectedDate] = useState(today)
     const [modal, setModal] = useState<{ form: BookingForm; editId: string | null } | null>(null)
     const [confirmDel, setConfirmDel] = useState<string | null>(null)
@@ -328,11 +334,11 @@ export default function AppointmentsPage() {
     const openEdit = (appt: Appointment) => setModal({
         form: {
             date: appt.date,
-            time: appt.time?.slice(0, 5) ?? "09:00",   // normalize HH:MM:SS → HH:MM
+            time: appt.time?.slice(0, 5) ?? "09:00",
             clientName: appt.client.name,
             clientPhone: appt.client.phone ?? "",
             clientEmail: appt.client.email ?? "",
-            service: Array.isArray(appt.service) ? appt.service : appt.service ? [appt.service as unknown as string] : [],
+            services: Array.isArray(appt.services) ? appt.services : appt.services ? [appt.services as unknown as string] : [],
             assignee: appt.assignee,
             status: appt.status,
             notes: appt.notes ?? "",
@@ -379,7 +385,7 @@ export default function AppointmentsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-medium text-gray-800 truncate">{a.client.name}</p>
-                                        <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {joinServices(a.service)}</p>
+                                        <p className="text-[10px] text-gray-400 truncate">{formatTime(a.time)} · {resolveServices(a.services, jobTypes)}</p>
                                     </div>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).color}`}>{(STATUS_CONFIG[a.status] ?? STATUS_CONFIG["PENDING"]).label}</span>
                                 </button>

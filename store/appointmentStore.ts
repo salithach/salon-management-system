@@ -16,7 +16,7 @@ export type Appointment = {
     date: string          // YYYY-MM-DD
     time: string          // HH:MM (24h)
     client: Client
-    service: string[]     // one or more service labels
+    services: string[]    // list of service keys (e.g. ["HAIR_CUT"])
     assignee: string
     status: AppointmentStatus
     notes?: string
@@ -44,28 +44,17 @@ function normalizeStatus(raw: string): AppointmentStatus {
 function normalizeAppointment(raw: unknown): Appointment {
     const a = raw as Record<string, unknown>
 
-    // ── stylistName: assignee.name / stylist.name / staff.name / flat string ──
-    const stylistName = String(
-        a.stylistName
-        ?? (a.assignee as Record<string, string> | undefined)?.name
-        ?? (a.stylist  as Record<string, string> | undefined)?.name
-        ?? (a.staff    as Record<string, string> | undefined)?.name
-        ?? ""
-    )
-
-    // ── service: normalise to string[] regardless of API shape ───────────────
-    const rawService = a.service ?? a.serviceType ?? a.serviceName ?? []
-    const service: string[] = Array.isArray(rawService)
-        ? (rawService as unknown[]).map((s) =>
+    const rawServices = a.services ?? []
+    const services: string[] = Array.isArray(rawServices)
+        ? (rawServices as unknown[]).map((s) =>
             typeof s === "object" && s !== null
-                ? String((s as Record<string, unknown>).value ?? (s as Record<string, unknown>).name ?? "")
+                ? String((s as Record<string, unknown>).key ?? (s as Record<string, unknown>).value ?? (s as Record<string, unknown>).name ?? "")
                 : String(s)
           ).filter(Boolean)
-        : String(rawService).trim()
-            ? [String(rawService)]
+        : String(rawServices).trim()
+            ? [String(rawServices)]
             : []
 
-    // ── client: nested object or flat fields ─────────────────────────────────
     const rawClient = a.client as Record<string, string> | undefined
     const client: Client = rawClient && typeof rawClient === "object"
         ? { name: rawClient.name ?? "", phone: rawClient.phone ?? undefined, email: rawClient.email ?? undefined }
@@ -76,15 +65,15 @@ function normalizeAppointment(raw: unknown): Appointment {
           }
 
     return {
-        id:         String(a.id ?? ""),
-        date:       String(a.date ?? ""),
-        time:       String(a.time ?? "").slice(0, 5) || "09:00",
+        id: String(a.id ?? ""),
+        date: String(a.date ?? ""),
+        time: String(a.time ?? "").slice(0, 5) || "09:00",
         client,
-        service,
+        services,
         assignee: String(a.assignee ?? ""),
-        status:     normalizeStatus(String(a.status ?? "")),
-        notes:      a.notes ? String(a.notes) : undefined,
-        createdAt:  String(a.createdAt ?? new Date().toISOString()),
+        status: normalizeStatus(String(a.status ?? "")),
+        notes: a.notes ? String(a.notes) : undefined,
+        createdAt: String(a.createdAt ?? new Date().toISOString()),
     }
 }
 
@@ -173,7 +162,6 @@ export const useAppointmentStore = create<AppointmentState>()(
                         const msg = json?.message || json?.errors?.[0]?.message || "Failed to update appointment"
                         throw new Error(msg)
                     }
-                    // Apply server-returned record (normalised)
                     const updated: Appointment = normalizeAppointment(json?.data ?? json)
                     set((s) => ({
                         appointments: s.appointments.map((a) => a.id === id ? updated : a),
@@ -207,15 +195,19 @@ export const useAppointmentStore = create<AppointmentState>()(
         }),
         {
             name: "appointments-storage",
-            // Migrate stale data: ensure service is always string[]
+            // Migrate stale data: ensure services is always string[]
             onRehydrateStorage: () => (state) => {
                 if (!state) return
-                state.appointments = state.appointments.map((a) => ({
-                    ...a,
-                    service: Array.isArray(a.service)
-                        ? a.service
-                        : a.service ? [a.service as unknown as string] : [],
-                }))
+                state.appointments = state.appointments.map((a) => {
+                    const raw = a as unknown as Record<string, unknown>
+                    const legacyServices = raw.services ?? raw.service
+                    return {
+                        ...a,
+                        services: Array.isArray(legacyServices)
+                            ? legacyServices as string[]
+                            : legacyServices ? [String(legacyServices)] : [],
+                    }
+                })
             },
         }
     )
