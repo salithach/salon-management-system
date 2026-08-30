@@ -28,11 +28,12 @@ export default function DashboardPage() {
     const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady, fetchProfile, user } = useAuthStore()
-    const currency = user?.salon?.currency?.toUpperCase() || "xxx"
+    const currency = user?.salon?.currency?.toUpperCase() || "USD"
     const { jobTypes, metadataLoading: jobTypesLoading } = useMetadataStore()
     const { jobs, jobsLoading, fetchJobs, addJob } = useJobStore()
 
     const jobTypeOptions = jobTypes.map((t) => ({ label: t.value, value: t.key }))
+        .sort((a, b) => a.label.localeCompare(b.label))
 
     // Build a per-username job map from the fetched JobList[]
     const todayJobs = jobs.reduce<Record<string, JobDetails[]>>((acc, jl: JobList) => {
