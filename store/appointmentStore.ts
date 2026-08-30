@@ -28,6 +28,13 @@ const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+/** Ensures the loading state is visible for at least MIN_MS milliseconds — same pattern as staffStore */
+const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
+    const elapsed = Date.now() - start
+    return new Promise<void>(
+        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
+    )
+}
 /** Normalise whatever the API returns ("confirmed", "Confirmed", "CONFIRMED") → "CONFIRMED" */
 function normalizeStatus(raw: string): AppointmentStatus {
     switch (raw?.toUpperCase()) {
@@ -105,6 +112,7 @@ export const useAppointmentStore = create<AppointmentState>()(
 
                     if (!res.ok) {
                         const raw = data?.message
+                        await wait()
                         set({
                             error: (typeof raw === "object" ? raw?.message : raw) || "Failed to fetch appointments",
                             appointmentsLoading: false,
@@ -113,14 +121,15 @@ export const useAppointmentStore = create<AppointmentState>()(
                     }
 
                     const fetched: Appointment[] = (data?.data ?? data ?? []).map(normalizeAppointment)
+                    await wait()
                     set((s) => ({
-                        // Replace appointments for the fetched date; keep all other dates untouched
                         appointments: date
                             ? [...s.appointments.filter((a) => a.date !== date), ...fetched]
                             : fetched,
                         appointmentsLoading: false,
                     }))
                 } catch (err) {
+                    await wait()
                     set({ error: (err as Error).message, appointmentsLoading: false })
                 }
             },
