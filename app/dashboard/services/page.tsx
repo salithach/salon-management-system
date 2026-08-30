@@ -211,7 +211,11 @@ export default function ServicesPage() {
                                 <input
                                     type="text"
                                     value={form.value}
-                                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                                    onChange={(e) => {
+                                        const name = e.target.value
+                                        const autoKey = name.trim().toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "")
+                                        setForm({ ...form, value: name, key: autoKey })
+                                    }}
                                     placeholder="e.g. Hair Cut"
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white"
                                 />
@@ -225,11 +229,11 @@ export default function ServicesPage() {
                                 <input
                                     type="text"
                                     value={form.key}
-                                    onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase().replace(/\s+/g, "_") })}
+                                    onChange={(e) => setForm({ ...form, key: e.target.value.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "") })}
                                     placeholder="e.g. HAIR_CUT"
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white font-mono"
                                 />
-                                <p className="text-[10px] text-gray-400 mt-1">Lowercase, underscores only. Auto-formatted as you type.</p>
+                                <p className="text-[10px] text-gray-400 mt-1">Uppercase, underscores only. Auto-populated from service name.</p>
                             </div>
 
                             {/* category */}

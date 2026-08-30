@@ -28,7 +28,7 @@ export default function DashboardPage() {
     const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady, fetchProfile, user } = useAuthStore()
-    const currency = user?.salon?.currency?.toUpperCase() || "USD"
+    const currency = user?.salon?.currency?.toUpperCase() || "xxx"
     const { jobTypes, metadataLoading: jobTypesLoading } = useMetadataStore()
     const { jobs, jobsLoading, fetchJobs, addJob } = useJobStore()
 

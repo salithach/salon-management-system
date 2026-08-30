@@ -598,15 +598,20 @@ function ServicesTab({ salonId }: { salonId: string }) {
                 <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
                     <input
                         className={inp}
-                        placeholder="Key (e.g. HAIR_CUT)"
-                        value={newKey}
-                        onChange={(e) => setNewKey(e.target.value)}
+                        placeholder="Label (e.g. Hair Cut)"
+                        value={newValue}
+                        onChange={(e) => {
+                            const label = e.target.value
+                            const autoKey = label.trim().toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "")
+                            setNewValue(label)
+                            setNewKey(autoKey)
+                        }}
                     />
                     <input
                         className={inp}
-                        placeholder="Label (e.g. Hair Cut)"
-                        value={newValue}
-                        onChange={(e) => setNewValue(e.target.value)}
+                        placeholder="Key (e.g. HAIR_CUT)"
+                        value={newKey}
+                        onChange={(e) => setNewKey(e.target.value.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, ""))}
                     />
                     <input
                         className={inp}
