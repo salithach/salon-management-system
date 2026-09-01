@@ -35,3 +35,12 @@ export async function apiFetch(
     return res
 }
 
+/**
+ * Safely returns a YYYY-MM-DD date string representing local time instead of UTC to avoid timezone date drift.
+ */
+export function getLocalDateString(d: Date = new Date()): string {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+}

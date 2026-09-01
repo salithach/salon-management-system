@@ -15,7 +15,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     }
     try {
         const { id } = await params
-        const date = new Date().toISOString().slice(0, 10)
+        const d = new Date()
+        const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
         const res = await fetch(`${API_BASE}/api/v1/assignments/${id}?date=${date}`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json", ...forwardAuth(req) },
