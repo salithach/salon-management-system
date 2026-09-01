@@ -1,9 +1,9 @@
 export default function AboutPage() {
     const stats = [
-        { value: "4,000+", label: "Salons using SalonHQ" },
-        { value: "2M+",    label: "Appointments managed" },
-        { value: "99.9%",  label: "Platform uptime" },
-        { value: "4.9 ★",  label: "Average rating" },
+        { value: "4,000+", label: "Salons using SalonHQ", icon: "🏢" },
+        { value: "2M+",    label: "Appointments managed", icon: "📅" },
+        { value: "99.9%",  label: "Platform uptime",      icon: "⚡" },
+        { value: "4.9 ★",  label: "Average rating",       icon: "⭐" },
     ];
 
     const pillars = [
@@ -12,80 +12,98 @@ export default function AboutPage() {
             icon: "📅",
             title: "Built around the calendar",
             body: "Real-time booking, automated reminders, and zero double-bookings — so your team focuses on clients, not admin.",
+            gradient: "from-violet-500 to-indigo-500",
         },
         {
             label: "Staff",
             icon: "👥",
             title: "Your whole team, one place",
             body: "Rosters, commission tracking, daily jobs, and performance reports — all unified under one clean dashboard.",
+            gradient: "from-indigo-500 to-blue-500",
         },
         {
             label: "Analytics",
             icon: "📊",
             title: "Data that drives decisions",
             body: "Revenue by service, staff, and period. Retention insights and trend reports that actually help you grow.",
+            gradient: "from-emerald-500 to-teal-500",
         },
     ];
 
     const team = [
-        { name: "Alex Rivera",   role: "CEO & Co-founder",  initial: "A" },
-        { name: "Priya Nair",    role: "Head of Product",    initial: "P" },
-        { name: "James Cho",     role: "Lead Engineer",      initial: "J" },
-        { name: "Sofia Martins", role: "Customer Success",   initial: "S" },
+        { name: "Alex Rivera",   role: "CEO & Co-founder",  initial: "A", gradient: "from-violet-600 to-indigo-600" },
+        { name: "Priya Nair",    role: "Head of Product",    initial: "P", gradient: "from-indigo-600 to-blue-600"   },
+        { name: "James Cho",     role: "Lead Engineer",      initial: "J", gradient: "from-emerald-600 to-teal-600"  },
+        { name: "Sofia Martins", role: "Customer Success",   initial: "S", gradient: "from-rose-500 to-pink-600"     },
     ];
 
     return (
-        <main className="bg-[#f8fafc] text-slate-900 min-h-screen">
+        <main className="bg-white text-slate-900 min-h-screen">
 
             {/* ── Hero ── */}
-            <section className="bg-white border-b border-slate-200 px-6 py-28 text-center">
-                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-6">
-                    Est. 2020 · Salon Software
-                </span>
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-slate-900 mb-6 max-w-3xl mx-auto">
-                    Built for salons,<br className="hidden sm:block" /> by people who get it.
-                </h1>
-                <p className="text-slate-500 text-lg max-w-xl mx-auto leading-relaxed mb-10">
-                    SalonHQ is the all-in-one platform that replaces the spreadsheets,
-                    missed calls, and disconnected tools — for good.
-                </p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                    <a href="/pricing" className="px-7 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-full hover:bg-indigo-700 transition-colors shadow-sm">
-                        View Plans
-                    </a>
-                    <a href="/contact" className="px-7 py-3 border border-slate-300 text-slate-600 text-sm font-semibold rounded-full hover:border-slate-900 hover:text-slate-900 transition-colors">
-                        Book a Demo
-                    </a>
+            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-indigo-950 to-violet-950 px-6 py-32 text-center">
+                {/* Glow orbs */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-112.5 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative max-w-3xl mx-auto">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-300 bg-indigo-500/10 border border-indigo-500/25 px-4 py-1.5 rounded-full mb-7">
+                        Est. 2020 · Salon Software
+                    </span>
+                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-white mb-7">
+                        Built for salons,{" "}
+                        <span className="bg-linear-to-r from-violet-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
+                            by people who get it.
+                        </span>
+                    </h1>
+                    <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed mb-10">
+                        SalonHQ is the all-in-one platform that replaces the spreadsheets,
+                        missed calls, and disconnected tools — for good.
+                    </p>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        <a href="/pricing"
+                           className="px-7 py-3.5 bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-full transition-all shadow-lg shadow-indigo-700/40 hover:-translate-y-0.5">
+                            View Plans
+                        </a>
+                        <a href="/contact"
+                           className="px-7 py-3.5 border border-white/20 text-slate-300 hover:text-white text-sm font-semibold rounded-full hover:border-white/40 backdrop-blur-sm transition-all hover:-translate-y-0.5">
+                            Book a Demo
+                        </a>
+                    </div>
                 </div>
             </section>
 
             {/* ── Stats ── */}
-            <section className="bg-slate-900 px-6 py-14">
+            <section className="bg-linear-to-r from-indigo-600 via-violet-600 to-indigo-600 px-6 py-16">
                 <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                     {stats.map((s) => (
-                        <div key={s.label}>
+                        <div key={s.label} className="group">
+                            <p className="text-3xl mb-1">{s.icon}</p>
                             <p className="text-3xl font-bold tracking-tight text-white">{s.value}</p>
-                            <p className="text-slate-400 text-sm mt-1.5">{s.label}</p>
+                            <p className="text-indigo-200 text-sm mt-1.5">{s.label}</p>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* ── Story ── */}
-            <section className="max-w-6xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-16 items-center">
+            <section className="max-w-6xl mx-auto px-6 py-28 grid md:grid-cols-2 gap-16 items-center">
                 <div>
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-5">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-6">
                         Our Story
                     </span>
-                    <h2 className="text-4xl font-bold tracking-tight leading-tight text-slate-900 mb-6">
-                        We saw the chaos.<br />We built the fix.
+                    <h2 className="text-4xl font-bold tracking-tight leading-tight text-slate-900 mb-7">
+                        We saw the chaos.{" "}
+                        <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                            We built the fix.
+                        </span>
                     </h2>
-                    <p className="text-slate-500 leading-relaxed mb-4">
+                    <p className="text-slate-500 leading-relaxed mb-5 text-[15px]">
                         SalonHQ started when our founders — former salon owners — got tired of
                         juggling three apps, a paper book, and a group chat just to run one shift.
                         They set out to build the software they always wished existed.
                     </p>
-                    <p className="text-slate-500 leading-relaxed">
+                    <p className="text-slate-500 leading-relaxed text-[15px]">
                         Today, thousands of salons trust SalonHQ for scheduling, staff management,
                         client records, and real-time revenue insight — from one clean dashboard.
                     </p>
@@ -93,53 +111,59 @@ export default function AboutPage() {
 
                 {/* Mock dashboard card */}
                 <div className="relative">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Today&apos;s Overview</p>
-                            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                    <div className="absolute -inset-4 bg-linear-to-br from-violet-500/10 to-indigo-500/10 rounded-3xl blur-2xl" />
+                    <div className="relative bg-white border border-slate-200 rounded-2xl p-7 shadow-xl space-y-3">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Today&apos;s Overview</p>
+                            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
                             </span>
                         </div>
                         {[
-                            { icon: "📅", label: "Appointments",  value: "42 booked" },
-                            { icon: "👤", label: "New clients",   value: "3 today" },
-                            { icon: "💳", label: "Revenue",       value: "$2,840" },
-                            { icon: "⭐", label: "Reviews",       value: "4 × 5-star" },
+                            { icon: "📅", label: "Appointments",  value: "42 booked",   color: "bg-indigo-50 border-indigo-100" },
+                            { icon: "👤", label: "New clients",   value: "3 today",     color: "bg-violet-50 border-violet-100" },
+                            { icon: "💳", label: "Revenue",       value: "$2,840",      color: "bg-emerald-50 border-emerald-100" },
+                            { icon: "⭐", label: "Reviews",       value: "4 × 5-star",  color: "bg-amber-50 border-amber-100"   },
                         ].map((row) => (
-                            <div key={row.label} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
+                            <div key={row.label} className={`flex items-center justify-between ${row.color} border rounded-xl px-4 py-3`}>
                                 <div className="flex items-center gap-2.5 text-sm text-slate-600">
                                     <span>{row.icon}</span>
-                                    <span>{row.label}</span>
+                                    <span className="font-medium">{row.label}</span>
                                 </div>
-                                <span className="text-sm font-semibold text-slate-900">{row.value}</span>
+                                <span className="text-sm font-bold text-slate-900">{row.value}</span>
                             </div>
                         ))}
                     </div>
-                    <div className="absolute -top-3 -right-3 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                    <div className="absolute -top-3 -right-3 bg-linear-to-r from-violet-600 to-indigo-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-indigo-500/30">
                         Live Dashboard
                     </div>
                 </div>
             </section>
 
             {/* ── Pillars ── */}
-            <section className="border-y border-slate-200 py-24 px-6 bg-white">
+            <section className="py-28 px-6 bg-linear-to-b from-slate-50 to-white">
                 <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-14">
-                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-4">
+                    <div className="text-center mb-16">
+                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-5">
                             Why SalonHQ
                         </span>
-                        <h2 className="text-4xl font-bold tracking-tight text-slate-900">What we get right</h2>
+                        <h2 className="text-4xl font-bold tracking-tight text-slate-900">
+                            What we{" "}
+                            <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                                get right
+                            </span>
+                        </h2>
                     </div>
                     <div className="grid md:grid-cols-3 gap-6">
                         {pillars.map((p) => (
-                            <div key={p.title} className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-7 hover:border-indigo-400 hover:shadow-md transition-all group">
-                                <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl mb-5">
+                            <div key={p.title} className="group bg-white border border-slate-200 rounded-2xl p-8 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-100/50 transition-all hover:-translate-y-1">
+                                <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${p.gradient} flex items-center justify-center text-xl mb-6 shadow-lg`}>
                                     {p.icon}
                                 </div>
-                                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 mb-3">
+                                <span className="inline-block text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3">
                                     {p.label}
                                 </span>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">{p.title}</h3>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2.5">{p.title}</h3>
                                 <p className="text-slate-500 text-sm leading-relaxed">{p.body}</p>
                             </div>
                         ))}
@@ -148,23 +172,26 @@ export default function AboutPage() {
             </section>
 
             {/* ── Team ── */}
-            <section className="max-w-6xl mx-auto px-6 py-24">
-                <div className="text-center mb-14">
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-4">
+            <section className="max-w-6xl mx-auto px-6 py-28">
+                <div className="text-center mb-16">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-5">
                         The Team
                     </span>
-                    <h2 className="text-4xl font-bold tracking-tight text-slate-900">People behind the platform</h2>
-                    <p className="text-slate-500 mt-3 max-w-md mx-auto text-sm">
+                    <h2 className="text-4xl font-bold tracking-tight text-slate-900">
+                        People behind the{" "}
+                        <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">platform</span>
+                    </h2>
+                    <p className="text-slate-500 mt-3 max-w-md mx-auto text-sm leading-relaxed">
                         Engineers, designers, and former salon operators who care about getting this right.
                     </p>
                 </div>
                 <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
                     {team.map((m) => (
-                        <div key={m.name} className="bg-white border border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-400 hover:shadow-md transition-all group">
-                            <div className="w-14 h-14 rounded-full bg-indigo-50 border border-indigo-100 mx-auto mb-4 flex items-center justify-center text-lg font-bold text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <div key={m.name} className="group bg-white border border-slate-200 rounded-2xl p-7 text-center hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-100/50 transition-all hover:-translate-y-1">
+                            <div className={`w-16 h-16 rounded-full bg-linear-to-br ${m.gradient} mx-auto mb-5 flex items-center justify-center text-xl font-bold text-white shadow-lg`}>
                                 {m.initial}
                             </div>
-                            <p className="font-semibold text-slate-900 text-sm">{m.name}</p>
+                            <p className="font-bold text-slate-900 text-sm">{m.name}</p>
                             <p className="text-slate-400 text-xs mt-1">{m.role}</p>
                         </div>
                     ))}
@@ -172,19 +199,24 @@ export default function AboutPage() {
             </section>
 
             {/* ── CTA ── */}
-            <section className="bg-slate-900 text-white px-6 py-24 text-center">
-                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-950 px-3 py-1.5 rounded-full mb-6">
-                    Get Started
-                </span>
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5 leading-tight">
-                    Ready to modernise<br />your salon?
-                </h2>
-                <p className="text-slate-400 max-w-md mx-auto mb-10 text-sm leading-relaxed">
-                    Join 4,000+ salons already running smarter with SalonHQ. No contracts. Cancel anytime.
-                </p>
-                <a href="/contact" className="inline-block px-8 py-3.5 bg-indigo-600 text-white font-semibold text-sm rounded-full hover:bg-indigo-700 transition-colors shadow-lg">
-                    Book a Free Demo
-                </a>
+            <section className="relative overflow-hidden bg-linear-to-br from-violet-700 via-indigo-700 to-indigo-800 px-6 py-28 text-center">
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-175 h-100 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative max-w-2xl mx-auto">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-200 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full mb-7">
+                        Get Started
+                    </span>
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight text-white">
+                        Ready to modernise<br />your salon?
+                    </h2>
+                    <p className="text-indigo-200 max-w-md mx-auto mb-10 text-sm leading-relaxed">
+                        Join 4,000+ salons already running smarter with SalonHQ. No contracts. Cancel anytime.
+                    </p>
+                    <a href="/contact"
+                       className="inline-flex items-center gap-2 px-9 py-3.5 bg-white text-indigo-700 font-bold text-sm rounded-full hover:bg-indigo-50 transition-all shadow-xl hover:-translate-y-0.5">
+                        Book a Free Demo
+                        <span>→</span>
+                    </a>
+                </div>
             </section>
 
         </main>

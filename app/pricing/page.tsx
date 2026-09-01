@@ -16,6 +16,8 @@ export default function PricingPage() {
             ],
             highlight: false,
             cta: "Start free trial",
+            iconBg: "from-slate-100 to-slate-200",
+            icon: "🚀",
         },
         {
             name: "Pro",
@@ -35,6 +37,8 @@ export default function PricingPage() {
             ],
             highlight: true,
             cta: "Start free trial",
+            iconBg: "from-violet-500 to-indigo-500",
+            icon: "⚡",
         },
         {
             name: "Enterprise",
@@ -54,6 +58,8 @@ export default function PricingPage() {
             ],
             highlight: false,
             cta: "Contact sales",
+            iconBg: "from-slate-100 to-slate-200",
+            icon: "🏢",
         },
     ];
 
@@ -77,99 +83,116 @@ export default function PricingPage() {
     ];
 
     return (
-        <main className="bg-[#f8fafc] text-slate-900 min-h-screen">
+        <main className="bg-white text-slate-900 min-h-screen">
 
             {/* ── Hero ── */}
-            <section className="bg-white border-b border-slate-200 px-6 py-24 text-center">
-                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-5">
-                    Pricing
-                </span>
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-slate-900 mb-5">
-                    Simple, transparent pricing.
-                </h1>
-                <p className="text-slate-500 text-lg max-w-xl mx-auto">
-                    No hidden fees. No long-term contracts. Start free for 14 days — upgrade or cancel anytime.
-                </p>
+            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-indigo-950 to-violet-950 px-6 py-28 text-center">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-100 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="relative max-w-2xl mx-auto">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-300 bg-indigo-500/10 border border-indigo-500/25 px-4 py-1.5 rounded-full mb-7">
+                        Pricing
+                    </span>
+                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-white mb-6">
+                        Simple,{" "}
+                        <span className="bg-linear-to-r from-violet-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
+                            transparent
+                        </span>{" "}
+                        pricing.
+                    </h1>
+                    <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed">
+                        No hidden fees. No long-term contracts. Start free for 14 days — upgrade or cancel anytime.
+                    </p>
+                </div>
             </section>
 
             {/* ── Plans ── */}
-            <section className="max-w-6xl mx-auto px-6 py-16">
-                <div className="grid md:grid-cols-3 gap-5 items-stretch">
+            <section className="max-w-6xl mx-auto px-6 py-20">
+                <div className="grid md:grid-cols-3 gap-6 items-stretch">
                     {plans.map((plan) => (
                         <div key={plan.name}
-                             className={`relative flex flex-col rounded-2xl p-8 border transition-all ${
+                             className={`relative flex flex-col rounded-2xl border transition-all ${
                                  plan.highlight
-                                     ? "bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-200"
-                                     : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md"
+                                     ? "bg-linear-to-br from-violet-600 via-indigo-600 to-indigo-700 border-transparent shadow-2xl shadow-indigo-500/30"
+                                     : "bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-100/50 hover:-translate-y-1"
                              }`}>
                             {plan.highlight && (
-                                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-indigo-600 text-xs font-bold px-4 py-1.5 rounded-full border border-indigo-200 shadow-sm">
-                                    Most popular
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-linear-to-r from-amber-400 to-orange-400 text-slate-900 text-xs font-black px-5 py-1.5 rounded-full shadow-lg tracking-wide uppercase">
+                                    ✨ Most popular
                                 </div>
                             )}
 
-                            <div className="mb-6">
-                                <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>
-                                    {plan.tag}
-                                </p>
-                                <h2 className="text-2xl font-bold">{plan.name}</h2>
+                            <div className="p-8 flex flex-col flex-1">
+                                <div className="mb-7">
+                                    <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${plan.highlight ? "from-white/20 to-white/10" : plan.iconBg} flex items-center justify-center text-xl mb-4 ${plan.highlight ? "" : "border border-slate-100"}`}>
+                                        {plan.icon}
+                                    </div>
+                                    <p className={`text-xs font-bold uppercase tracking-widest mb-1.5 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>
+                                        {plan.tag}
+                                    </p>
+                                    <h2 className={`text-2xl font-bold ${plan.highlight ? "text-white" : "text-slate-900"}`}>{plan.name}</h2>
+                                </div>
+
+                                <div className={`pb-7 mb-7 border-b ${plan.highlight ? "border-white/20" : "border-slate-100"}`}>
+                                    <p className={`text-5xl font-bold tracking-tight ${plan.highlight ? "text-white" : "text-slate-900"}`}>
+                                        {plan.price}
+                                        <span className={`text-base font-normal ml-1 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.period}</span>
+                                    </p>
+                                    <p className={`text-xs mt-2 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.note}</p>
+                                </div>
+
+                                <ul className="space-y-3 flex-1 mb-8">
+                                    {plan.features.map((f) => (
+                                        <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? "text-indigo-100" : "text-slate-600"}`}>
+                                            <span className={`mt-0.5 shrink-0 font-black text-xs ${plan.highlight ? "text-white" : "text-indigo-500"}`}>✓</span>
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <a href="/contact"
+                                   className={`block text-center py-3.5 rounded-xl text-sm font-bold transition-all ${
+                                       plan.highlight
+                                           ? "bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg hover:-translate-y-0.5"
+                                           : "bg-linear-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-md shadow-indigo-500/20 hover:-translate-y-0.5"
+                                   }`}>
+                                    {plan.cta} →
+                                </a>
                             </div>
-
-                            <div className={`pb-6 mb-6 border-b ${plan.highlight ? "border-indigo-500" : "border-slate-100"}`}>
-                                <p className="text-5xl font-bold tracking-tight">
-                                    {plan.price}
-                                    <span className={`text-base font-normal ml-1 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.period}</span>
-                                </p>
-                                <p className={`text-xs mt-2 ${plan.highlight ? "text-indigo-200" : "text-slate-400"}`}>{plan.note}</p>
-                            </div>
-
-                            <ul className="space-y-2.5 flex-1 mb-8">
-                                {plan.features.map((f) => (
-                                    <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? "text-indigo-100" : "text-slate-600"}`}>
-                                        <span className={`mt-0.5 shrink-0 font-bold text-xs ${plan.highlight ? "text-indigo-200" : "text-indigo-500"}`}>✓</span>
-                                        {f}
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <a href="/contact"
-                               className={`block text-center py-3 rounded-xl text-sm font-semibold transition-colors ${
-                                   plan.highlight
-                                       ? "bg-white text-indigo-600 hover:bg-indigo-50"
-                                       : "border border-slate-300 text-slate-700 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50"
-                               }`}>
-                                {plan.cta}
-                            </a>
                         </div>
                     ))}
                 </div>
-                <p className="text-center text-slate-400 text-xs mt-5">
+                <p className="text-center text-slate-400 text-xs mt-6">
                     All plans include a 14-day free trial · No credit card required
                 </p>
             </section>
 
             {/* ── Comparison ── */}
-            <section className="bg-white border-y border-slate-200 py-20 px-6">
+            <section className="bg-linear-to-b from-slate-50 to-white py-24 px-6">
                 <div className="max-w-4xl mx-auto">
-                    <div className="text-center mb-12">
-                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-4">
+                    <div className="text-center mb-14">
+                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-5">
                             Compare
                         </span>
-                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Feature breakdown</h2>
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+                            Feature{" "}
+                            <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">breakdown</span>
+                        </h2>
                     </div>
                     <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="grid grid-cols-4 bg-slate-50 border-b border-slate-200 px-6 py-4">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Feature</p>
+                        <div className="grid grid-cols-4 bg-linear-to-r from-slate-900 to-indigo-950 px-6 py-4">
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Feature</p>
                             {["Starter", "Pro", "Enterprise"].map((h) => (
-                                <p key={h} className="text-center text-xs font-semibold uppercase tracking-widest text-slate-500">{h}</p>
+                                <p key={h} className="text-center text-xs font-bold uppercase tracking-widest text-slate-300">{h}</p>
                             ))}
                         </div>
                         {comparison.map((row, i) => (
-                            <div key={row.feature} className={`grid grid-cols-4 px-6 py-4 ${i % 2 !== 0 ? "bg-slate-50/40" : "bg-white"}`}>
-                                <p className="text-sm text-slate-700">{row.feature}</p>
-                                <p className="text-center text-sm">{row.starter ? <span className="text-indigo-500 font-bold">✓</span> : <span className="text-slate-300">–</span>}</p>
-                                <p className="text-center text-sm">{row.pro     ? <span className="text-indigo-500 font-bold">✓</span> : <span className="text-slate-300">–</span>}</p>
-                                <p className="text-center text-sm">{row.enterprise ? <span className="text-indigo-500 font-bold">✓</span> : <span className="text-slate-300">–</span>}</p>
+                            <div key={row.feature} className={`grid grid-cols-4 px-6 py-4 border-b border-slate-100 last:border-0 ${i % 2 !== 0 ? "bg-slate-50/60" : "bg-white"}`}>
+                                <p className="text-sm font-medium text-slate-700">{row.feature}</p>
+                                <p className="text-center text-sm">{row.starter    ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs font-black">✓</span> : <span className="text-slate-300 font-bold">–</span>}</p>
+                                <p className="text-center text-sm">{row.pro        ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 text-violet-600 text-xs font-black">✓</span> : <span className="text-slate-300 font-bold">–</span>}</p>
+                                <p className="text-center text-sm">{row.enterprise ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 text-xs font-black">✓</span> : <span className="text-slate-300 font-bold">–</span>}</p>
                             </div>
                         ))}
                     </div>
@@ -177,41 +200,57 @@ export default function PricingPage() {
             </section>
 
             {/* ── FAQ ── */}
-            <section className="max-w-3xl mx-auto px-6 py-20">
-                <div className="text-center mb-12">
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full mb-4">
+            <section className="max-w-3xl mx-auto px-6 py-24">
+                <div className="text-center mb-14">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-1.5 rounded-full mb-5">
                         FAQ
                     </span>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">Common questions</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+                        Common{" "}
+                        <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">questions</span>
+                    </h2>
                 </div>
                 <div className="space-y-3">
-                    {faqs.map((faq) => (
-                        <div key={faq.q} className="bg-white border border-slate-200 rounded-2xl px-6 py-5 hover:border-indigo-300 transition-colors">
-                            <p className="font-semibold text-slate-900 mb-2">{faq.q}</p>
-                            <p className="text-slate-500 text-sm leading-relaxed">{faq.a}</p>
+                    {faqs.map((faq, i) => (
+                        <div key={faq.q} className="group bg-white border border-slate-200 rounded-2xl px-7 py-6 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all hover:-translate-y-0.5">
+                            <div className="flex items-start gap-4">
+                                <div className="w-7 h-7 rounded-lg bg-linear-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-black shrink-0 mt-0.5">
+                                    {i + 1}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-slate-900 mb-2">{faq.q}</p>
+                                    <p className="text-slate-500 text-sm leading-relaxed">{faq.a}</p>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* ── CTA ── */}
-            <section className="bg-slate-900 text-white px-6 py-24 text-center">
-                <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-950 px-3 py-1.5 rounded-full mb-6">
-                    Start today
-                </span>
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5 leading-tight">
-                    Run your salon smarter.
-                </h2>
-                <p className="text-slate-400 max-w-md mx-auto mb-10 text-sm leading-relaxed">
-                    Join 4,000+ salons who&apos;ve switched to SalonHQ. Setup takes under 10 minutes.
-                </p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                    <a href="/contact" className="px-7 py-3 bg-indigo-600 text-white font-semibold text-sm rounded-full hover:bg-indigo-700 transition-colors shadow-lg">
-                        Start Free Trial
-                    </a>
-                    <a href="/about" className="px-7 py-3 border border-slate-700 text-slate-400 text-sm font-medium rounded-full hover:border-slate-500 hover:text-white transition-colors">
-                        Learn More
-                    </a>
+            <section className="relative overflow-hidden bg-linear-to-br from-violet-700 via-indigo-700 to-indigo-800 px-6 py-28 text-center">
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-175 h-100 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 right-0 w-125 h-100 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative max-w-2xl mx-auto">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-200 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full mb-7">
+                        Start today
+                    </span>
+                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight text-white">
+                        Run your salon smarter.
+                    </h2>
+                    <p className="text-indigo-200 max-w-md mx-auto mb-10 text-sm leading-relaxed">
+                        Join 4,000+ salons who&apos;ve switched to SalonHQ. Setup takes under 10 minutes.
+                    </p>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                        <a href="/contact"
+                           className="px-8 py-3.5 bg-white text-indigo-700 font-bold text-sm rounded-full hover:bg-indigo-50 transition-all shadow-xl hover:-translate-y-0.5">
+                            Start Free Trial →
+                        </a>
+                        <a href="/about"
+                           className="px-8 py-3.5 border border-white/25 text-indigo-200 hover:text-white text-sm font-medium rounded-full hover:border-white/40 backdrop-blur-sm transition-all hover:-translate-y-0.5">
+                            Learn More
+                        </a>
+                    </div>
                 </div>
             </section>
 
