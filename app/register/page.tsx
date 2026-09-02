@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import SuccessScreen from "@/components/SuccessScreen"
 import { useSalonStore } from "@/store/salonStore"
 
-const inputCls = "w-full px-4 py-3 text-sm border border-white/10 rounded-xl outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/25 text-slate-200 placeholder:text-slate-650 bg-white/5 hover:border-white/20 transition-all"
+const inputCls = "w-full px-4 py-3 text-sm border border-white/10 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 text-slate-200 placeholder:text-slate-650 bg-white/5 hover:border-white/20 transition-all"
 const labelCls = "block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2"
 
 
@@ -127,16 +127,16 @@ export default function RegisterPage() {
     return (
         <div className="flex-1 flex items-start lg:items-center justify-center bg-slate-950 px-4 py-6 lg:py-8 overflow-x-hidden min-h-screen relative">
             {/* Decorative glow orbs */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-150 h-100 bg-teal-600/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-150 h-100 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative w-full max-w-5xl bg-slate-900/50 border border-white/10 shadow-2xl rounded-2xl overflow-hidden flex flex-col lg:flex-row items-stretch text-slate-100 backdrop-blur-md">
 
                 {/* ── Left branding panel (desktop only) ── */}
-                <div className="hidden lg:flex flex-col gap-7 w-80 shrink-0 bg-linear-to-br from-teal-950/40 via-slate-950/40 to-slate-950/40 border-r border-white/5 p-10 justify-center text-white">
+                <div className="hidden lg:flex flex-col gap-7 w-80 shrink-0 bg-linear-to-br from-blue-950/40 via-slate-950/40 to-slate-950/40 border-r border-white/5 p-10 justify-center text-white">
                     {/* Logo + tagline */}
                     <div>
-                        <p className="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-teal-300 to-emerald-300">SalonHQ</p>
+                        <p className="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-blue-300 to-indigo-300">SalonHQ</p>
                         <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">Everything your salon needs, in one place.</p>
                     </div>
 
@@ -152,7 +152,7 @@ export default function RegisterPage() {
                         ].map(({ icon: Icon, title, desc }) => (
                             <li key={title} className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                                    <Icon size={17} className="text-teal-400" />
+                                    <Icon size={17} className="text-blue-400" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-semibold text-white">{title}</p>
@@ -177,17 +177,17 @@ export default function RegisterPage() {
                             <div key={s.label} className="flex items-center flex-1">
                                 <div className="flex flex-col items-center gap-1.5 shrink-0">
                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                                        isComplete ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/10" : isActive ? "bg-teal-600 text-white shadow-md shadow-teal-500/10" : "bg-slate-800 text-slate-500 border border-white/5"
+                                        isComplete ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/10" : isActive ? "bg-blue-600 text-white shadow-md shadow-blue-500/10" : "bg-slate-800 text-slate-500 border border-white/5"
                                     }`}>
                                         {isComplete
                                             ? <CheckCircle2 size={16} className="text-white" />
                                             : <Icon size={15} className={isActive ? "text-white" : "text-slate-400"} />
                                         }
                                     </div>
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest hidden sm:block ${isActive ? "text-teal-300" : isComplete ? "text-emerald-400" : "text-slate-500"}`}>{s.label}</span>
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest hidden sm:block ${isActive ? "text-blue-300" : isComplete ? "text-indigo-400" : "text-slate-500"}`}>{s.label}</span>
                                 </div>
                                 {i < steps.length - 1 && (
-                                    <div className={`flex-1 h-px mx-4 mb-4 transition-all ${i < step ? "bg-emerald-650" : "bg-slate-800"}`} />
+                                    <div className={`flex-1 h-px mx-4 mb-4 transition-all ${i < step ? "bg-indigo-600" : "bg-slate-800"}`} />
                                 )}
                             </div>
                         )
@@ -199,7 +199,7 @@ export default function RegisterPage() {
                 <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3 bg-white/5">
-                        {(() => { const Icon = steps[step].icon; return <Icon size={16} className="text-teal-400 shrink-0" /> })()}
+                        {(() => { const Icon = steps[step].icon; return <Icon size={16} className="text-blue-400 shrink-0" /> })()}
                         <div>
                             <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                                 {["Account Setup", "Owner Details", "Salon Details", "Salon Location"][step]}
@@ -370,7 +370,7 @@ export default function RegisterPage() {
                                 : <div />
                              }
                             <button type="button" onClick={next} disabled={loading}
-                                className="flex items-center gap-1.5 text-sm bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-teal-950/50 hover:shadow-teal-900/50 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
+                                className="flex items-center gap-1.5 text-sm bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-950/50 hover:shadow-blue-900/50 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
                                 {loading ? (
                                     <><Loader2 size={14} className="animate-spin" /> Creating…</>
                                 ) : (
@@ -386,7 +386,7 @@ export default function RegisterPage() {
 
                 <p className="text-xs text-slate-500 mt-4 text-center">
                     Already have an account?{" "}
-                    <Link href="/login" className="text-teal-400 font-semibold hover:underline">Sign in</Link>
+                    <Link href="/login" className="text-blue-400 font-semibold hover:underline">Sign in</Link>
                 </p>
                 </div> {/* end right column */}
             </div>

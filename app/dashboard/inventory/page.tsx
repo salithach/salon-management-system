@@ -8,17 +8,21 @@ import DropDown from "@/components/DropDown"
 import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_OPTIONS, INVENTORY_UNIT_OPTIONS } from "@/lib/constants"
 
 // ─── Feature flag ────────────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const COMING_SOON = true
+const COMING_SOON = false
 // ─────────────────────────────────────────────────────────────────────────────
 
-const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
-const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
+const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-850 bg-white text-gray-900 focus:ring-zinc-800"
+const labelCls = "block text-xs font-bold text-gray-600 mb-1.5"
 
 function stockStatus(item: InventoryItem) {
-    if (item.quantity === 0) return { label: "Out of stock", color: "bg-red-100 text-red-600" }
-    if (item.quantity <= item.lowStockThreshold) return { label: "Low stock", color: "bg-amber-100 text-amber-700" }
-    return { label: "In stock", color: "bg-green-100 text-green-700" }
+    if (item.quantity === 0) return { label: "Out of Stock", color: "bg-red-100 text-red-800 border border-red-200" }
+    if (item.quantity <= item.lowStockThreshold) return { label: "Low Stock", color: "bg-amber-100 text-amber-800 border border-amber-200" }
+    return { label: "In Stock", color: "bg-zinc-100 text-zinc-800 border border-zinc-200" }
+}
+
+function getCategoryLabel(categoryCode: string) {
+    const code = categoryCode?.toUpperCase().replace(/\s+/g, "_")
+    return INVENTORY_CATEGORIES.find(c => c.code === code)?.description ?? categoryCode
 }
 
 type FormData = { name: string; category: string; quantity: string; unit: string; lowStockThreshold: string; notes: string }
@@ -61,7 +65,8 @@ export default function InventoryPage() {
 
     const filtered = items.filter((item) => {
         const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-        const matchCat = categoryFilter === "ALL" || item.category === categoryFilter
+        const itemCatNormalized = item.category?.toUpperCase().replace(/\s+/g, "_")
+        const matchCat = categoryFilter === "ALL" || itemCatNormalized === categoryFilter.toUpperCase()
         return matchSearch && matchCat
     })
 
@@ -140,7 +145,7 @@ export default function InventoryPage() {
             {/* Toolbar */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
                 {/* Search */}
-                <div className="relative flex-1 min-w-[180px]">
+                <div className="relative flex-1 min-w-44">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         value={search}
@@ -191,7 +196,7 @@ export default function InventoryPage() {
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>
+                                        <p className="text-xs text-gray-450 text-gray-500 font-medium mt-0.5">{getCategoryLabel(item.category)}</p>
                                     </div>
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${status.color}`}>
                                         {status.label}

@@ -37,7 +37,7 @@ export default function PricingPage() {
             ],
             highlight: true,
             cta: "Start free trial",
-            iconBg: "from-teal-500 to-emerald-500",
+            iconBg: "from-blue-500 to-indigo-500",
             icon: "⚡",
         },
         {
@@ -86,17 +86,17 @@ export default function PricingPage() {
         <main className="bg-slate-950 text-slate-100 min-h-screen">
 
             {/* ── Hero ── */}
-            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-teal-950/40 to-slate-950 px-6 py-28 text-center">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-100 bg-teal-600/15 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none" />
+            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-blue-950/40 to-slate-950 px-6 py-28 text-center">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-100 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 right-1/4 w-100 h-75 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="relative max-w-2xl mx-auto">
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-teal-300 bg-teal-500/10 border border-teal-500/25 px-4 py-1.5 rounded-full mb-7">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/25 px-4 py-1.5 rounded-full mb-7">
                         Pricing
                     </span>
                     <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] text-white mb-6">
                         Simple,{" "}
-                        <span className="bg-linear-to-r from-teal-300 via-emerald-300 to-cyan-350 bg-clip-text text-transparent">
+                        <span className="bg-linear-to-r from-blue-300 via-indigo-300 to-sky-300 bg-clip-text text-transparent">
                             transparent
                         </span>{" "}
                         pricing.
@@ -114,8 +114,8 @@ export default function PricingPage() {
                         <div key={plan.name}
                              className={`relative flex flex-col rounded-2xl border transition-all ${
                                  plan.highlight
-                                     ? "bg-linear-to-br from-teal-950 via-slate-900 to-teal-900/80 border-teal-500/80 shadow-2xl shadow-teal-500/15"
-                                     : "bg-slate-900/50 border-white/10 hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/5 hover:-translate-y-1"
+                                     ? "bg-linear-to-br from-blue-950 via-slate-900 to-blue-900/80 border-blue-500/80 shadow-2xl shadow-blue-500/15"
+                                     : "bg-slate-900/50 border-white/10 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/5 hover:-translate-y-1"
                              }`}>
                             {plan.highlight && (
                                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-linear-to-r from-amber-400 to-orange-400 text-slate-900 text-xs font-black px-5 py-1.5 rounded-full shadow-lg tracking-wide uppercase">
@@ -128,7 +128,7 @@ export default function PricingPage() {
                                     <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${plan.highlight ? "from-white/20 to-white/10" : plan.iconBg} flex items-center justify-center text-xl mb-4 ${plan.highlight ? "" : "border border-white/10"}`}>
                                         {plan.icon}
                                     </div>
-                                    <p className={`text-xs font-bold uppercase tracking-widest mb-1.5 ${plan.highlight ? "text-teal-300" : "text-slate-500"}`}>
+                                    <p className={`text-xs font-bold uppercase tracking-widest mb-1.5 ${plan.highlight ? "text-blue-300" : "text-slate-500"}`}>
                                         {plan.tag}
                                     </p>
                                     <h2 className={`text-2xl font-bold ${plan.highlight ? "text-white" : "text-white"}`}>{plan.name}</h2>
@@ -137,15 +137,15 @@ export default function PricingPage() {
                                 <div className={`pb-7 mb-7 border-b ${plan.highlight ? "border-white/20" : "border-white/10"}`}>
                                     <p className={`text-5xl font-bold tracking-tight ${plan.highlight ? "text-white" : "text-white"}`}>
                                         {plan.price}
-                                        <span className={`text-base font-normal ml-1 ${plan.highlight ? "text-teal-300" : "text-slate-500"}`}>{plan.period}</span>
+                                        <span className={`text-base font-normal ml-1 ${plan.highlight ? "text-blue-300" : "text-slate-500"}`}>{plan.period}</span>
                                     </p>
-                                    <p className={`text-xs mt-2 ${plan.highlight ? "text-teal-350" : "text-slate-500"}`}>{plan.note}</p>
+                                    <p className={`text-xs mt-2 ${plan.highlight ? "text-blue-300" : "text-slate-500"}`}>{plan.note}</p>
                                 </div>
 
                                 <ul className="space-y-3 flex-1 mb-8">
                                     {plan.features.map((f) => (
-                                        <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? "text-teal-100" : "text-slate-300"}`}>
-                                            <span className={`mt-0.5 shrink-0 font-black text-xs ${plan.highlight ? "text-teal-400" : "text-teal-400"}`}>✓</span>
+                                        <li key={f} className={`flex items-start gap-2.5 text-sm ${plan.highlight ? "text-blue-100" : "text-slate-300"}`}>
+                                            <span className={`mt-0.5 shrink-0 font-black text-xs ${plan.highlight ? "text-blue-400" : "text-blue-400"}`}>✓</span>
                                             {f}
                                         </li>
                                     ))}
@@ -154,8 +154,8 @@ export default function PricingPage() {
                                 <a href="/contact"
                                    className={`block text-center py-3.5 rounded-xl text-sm font-bold transition-all ${
                                        plan.highlight
-                                           ? "bg-white text-teal-950 hover:bg-teal-50 shadow-lg hover:-translate-y-0.5"
-                                           : "bg-linear-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white shadow-md shadow-teal-500/10 hover:-translate-y-0.5"
+                                           ? "bg-white text-blue-950 hover:bg-blue-50 shadow-lg hover:-translate-y-0.5"
+                                           : "bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-500/10 hover:-translate-y-0.5"
                                    }`}>
                                     {plan.cta} →
                                 </a>
@@ -172,16 +172,16 @@ export default function PricingPage() {
             <section className="bg-linear-to-b from-slate-900 to-slate-950 py-24 px-6">
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-14">
-                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-teal-300 bg-teal-500/10 border border-teal-500/25 px-4 py-1.5 rounded-full mb-5">
+                        <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/25 px-4 py-1.5 rounded-full mb-5">
                             Compare
                         </span>
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Feature{" "}
-                            <span className="bg-linear-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">breakdown</span>
+                            <span className="bg-linear-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">breakdown</span>
                         </h2>
                     </div>
                     <div className="border border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="grid grid-cols-4 bg-linear-to-r from-slate-900 to-teal-950/70 px-6 py-4">
+                        <div className="grid grid-cols-4 bg-linear-to-r from-slate-900 to-blue-950/70 px-6 py-4">
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Feature</p>
                             {["Starter", "Pro", "Enterprise"].map((h) => (
                                 <p key={h} className="text-center text-xs font-bold uppercase tracking-widest text-slate-300">{h}</p>
@@ -190,9 +190,9 @@ export default function PricingPage() {
                         {comparison.map((row, i) => (
                             <div key={row.feature} className={`grid grid-cols-4 px-6 py-4 border-b border-white/5 last:border-0 ${i % 2 !== 0 ? "bg-white/5" : "bg-slate-950/20"}`}>
                                 <p className="text-sm font-medium text-slate-300">{row.feature}</p>
-                                <p className="text-center text-sm">{row.starter    ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-500/10 text-teal-300 border border-teal-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
-                                <p className="text-center text-sm">{row.pro        ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
-                                <p className="text-center text-sm">{row.enterprise ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
+                                <p className="text-center text-sm">{row.starter    ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/10 text-blue-300 border border-blue-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
+                                <p className="text-center text-sm">{row.pro        ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
+                                <p className="text-center text-sm">{row.enterprise ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-sky-500/10 text-sky-300 border border-sky-400/25 text-xs font-black">✓</span> : <span className="text-slate-600 font-bold">–</span>}</p>
                             </div>
                         ))}
                     </div>
@@ -202,19 +202,19 @@ export default function PricingPage() {
             {/* ── FAQ ── */}
             <section className="max-w-3xl mx-auto px-6 py-24">
                 <div className="text-center mb-14">
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-teal-300 bg-teal-500/10 border border-teal-500/25 px-4 py-1.5 rounded-full mb-5">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-500/25 px-4 py-1.5 rounded-full mb-5">
                         FAQ
                     </span>
                     <h2 className="text-3xl font-bold tracking-tight text-white">
                         Common{" "}
-                        <span className="bg-linear-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">questions</span>
+                        <span className="bg-linear-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">questions</span>
                     </h2>
                 </div>
                 <div className="space-y-3">
                     {faqs.map((faq, i) => (
-                        <div key={faq.q} className="group bg-slate-900/50 border border-white/10 rounded-2xl px-7 py-6 hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/5 transition-all hover:-translate-y-0.5">
+                        <div key={faq.q} className="group bg-slate-900/50 border border-white/10 rounded-2xl px-7 py-6 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/5 transition-all hover:-translate-y-0.5">
                             <div className="flex items-start gap-4">
-                                <div className="w-7 h-7 rounded-lg bg-linear-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white text-xs font-black shrink-0 mt-0.5">
+                                <div className="w-7 h-7 rounded-lg bg-linear-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xs font-black shrink-0 mt-0.5">
                                     {i + 1}
                                 </div>
                                 <div>
@@ -228,26 +228,26 @@ export default function PricingPage() {
             </section>
 
             {/* ── CTA ── */}
-            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-teal-950/60 to-slate-950 px-6 py-28 text-center border-t border-white/5">
+            <section className="relative overflow-hidden bg-linear-to-br from-slate-950 via-blue-950/60 to-slate-950 px-6 py-28 text-center border-t border-white/5">
                 <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-175 h-100 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-20 right-0 w-125 h-100 bg-teal-600/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 right-0 w-125 h-100 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="relative max-w-2xl mx-auto">
-                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-teal-200 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full mb-7">
+                    <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-200 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full mb-7">
                         Start today
                     </span>
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 leading-tight text-white">
                         Run your salon smarter.
                     </h2>
-                    <p className="text-teal-200/80 max-w-md mx-auto mb-10 text-sm leading-relaxed">
+                    <p className="text-blue-200/80 max-w-md mx-auto mb-10 text-sm leading-relaxed">
                         Join 4,000+ salons who&apos;ve switched to SalonHQ. Setup takes under 10 minutes.
                     </p>
                     <div className="flex flex-wrap gap-3 justify-center">
                         <a href="/contact"
-                           className="px-8 py-3.5 bg-white text-teal-900 font-bold text-sm rounded-full hover:bg-teal-50 transition-all shadow-xl hover:-translate-y-0.5">
+                           className="px-8 py-3.5 bg-white text-blue-900 font-bold text-sm rounded-full hover:bg-blue-50 transition-all shadow-xl hover:-translate-y-0.5">
                             Start Free Trial →
                         </a>
                         <a href="/about"
-                           className="px-8 py-3.5 border border-white/25 text-teal-200 hover:text-white text-sm font-medium rounded-full hover:border-white/40 backdrop-blur-sm transition-all hover:-translate-y-0.5">
+                           className="px-8 py-3.5 border border-white/25 text-blue-200 hover:text-white text-sm font-medium rounded-full hover:border-white/40 backdrop-blur-sm transition-all hover:-translate-y-0.5">
                             Learn More
                         </a>
                     </div>
