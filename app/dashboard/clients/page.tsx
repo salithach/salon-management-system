@@ -1,11 +1,14 @@
 "use client"
 
+"use client"
+
 import { useState, useMemo, useEffect } from "react"
 import {
     Users, Search, Mail, Phone, CalendarDays, Clock,
     Scissors, User, FileText, X, ChevronRight, CheckCircle2,
     AlertCircle, XCircle
 } from "lucide-react"
+import { useClientStore } from "@/store/clientStore"
 import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/appointmentStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
@@ -64,6 +67,7 @@ interface ClientGroup {
 }
 
 export default function ClientsPage() {
+    const { clients, clientsLoading, fetchClients } = useClientStore()
     const { appointments, appointmentsLoading, fetchAppointments } = useAppointmentStore()
     const { jobTypes, fetchMetadata } = useMetadataStore()
     const { user } = useAuthStore()
@@ -73,107 +77,106 @@ export default function ClientsPage() {
     const [frequencyFilter, setFrequencyFilter] = useState("ALL")
     const [selectedClient, setSelectedClient] = useState<ClientGroup | null>(null)
 
-    // Load ALL appointments and metadata on mount
+    // Load live clients collection, appointments, and metadata on mount
     useEffect(() => {
+        fetchClients().then(() => {})
         fetchAppointments().then(() => {})
         fetchMetadata({ force: false, tenantId: user?.username, user }).then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // Aggregate client lists dynamically from appointments API response
-    const clientsMap = useMemo(() => {
-        const groups: Record<string, ClientGroup> = {}
+    // Map the database client identities with live logs
+    const clientsList = useMemo(() => {
+        const list: ClientGroup[] = []
 
-        appointments.forEach((appt) => {
-            const name = (appt.client?.name ?? "").trim() || "Unknown Client"
-            const email = (appt.client?.email ?? "").trim()
-            const phone = (appt.client?.phone ?? "").trim()
+        clients.forEach((c) => {
+            const name = (c.name || "Unknown Client").trim()
+            const email = (c.email || "").trim()
+            const phone = (c.phone || "").trim()
 
-            // Group primary key - case-insensitive
-            const groupKey = `${name.toLowerCase()}||${email.toLowerCase()}`
+            // Find matching appointments by email fallback to name
+            const clientAppointments = appointments.filter((a) => {
+                const apptEmail = (a.client?.email || "").trim().toLowerCase()
+                const apptName = (a.client?.name || "").trim().toLowerCase()
 
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    name,
-                    email,
-                    phone,
-                    key: groupKey,
-                    appointments: [],
-                    visitsCount: 0,
-                    confirmedCount: 0,
-                    pendingCount: 0,
-                    cancelledCount: 0,
-                    lastVisitDate: "—",
-                    lastVisitTime: "—",
-                    favoriteStylist: "—",
-                    servicesReceived: [],
+                const currentEmail = email.toLowerCase()
+                const currentName = name.toLowerCase()
+
+                if (currentEmail && apptEmail) {
+                    return currentEmail === apptEmail
                 }
-            }
+                return currentName === apptName
+            })
 
-            const g = groups[groupKey]
-            g.appointments.push(appt)
+            // Calculate metrics
+            let confirmedCount = 0
+            let pendingCount = 0
+            let cancelledCount = 0
 
-            // Increment status count
-            if (appt.status === "CONFIRMED") g.confirmedCount++
-            else if (appt.status === "PENDING") g.pendingCount++
-            else if (appt.status === "CANCELLED") g.cancelledCount++
+            clientAppointments.forEach((a) => {
+                if (a.status === "CONFIRMED") confirmedCount++
+                else if (a.status === "PENDING") pendingCount++
+                else if (a.status === "CANCELLED") cancelledCount++
+            })
 
-            // Populate phone if empty
-            if (!g.phone && phone) {
-                g.phone = phone
-            }
-        })
-
-        // Post-processing for each unique client
-        Object.values(groups).forEach((g) => {
-            g.visitsCount = g.appointments.length
-
-            // Sort appointments chronologically descending (newest first)
-            g.appointments.sort((a, b) => {
+            // Chronological descending sort
+            const sortedAppts = [...clientAppointments].sort((a, b) => {
                 const dtA = `${a.date}T${a.time || "00:00"}`
                 const dtB = `${b.date}T${b.time || "00:00"}`
                 return dtB.localeCompare(dtA)
             })
 
-            // Latest appointment
-            const latest = g.appointments[0]
-            if (latest) {
-                g.lastVisitDate = latest.date
-                g.lastVisitTime = latest.time
-            }
+            const latest = sortedAppts[0]
+            const lastVisitDate = latest ? latest.date : "—"
+            const lastVisitTime = latest ? latest.time : "—"
 
-            // Deduplicate services received
+            // Services received
             const servicesSet = new Set<string>()
-            g.appointments.forEach((a) => {
+            clientAppointments.forEach((a) => {
                 if (Array.isArray(a.services)) {
                     a.services.forEach((s) => servicesSet.add(s))
                 } else if (a.services) {
                     servicesSet.add(a.services)
                 }
             })
-            g.servicesReceived = Array.from(servicesSet)
+            const servicesReceived = Array.from(servicesSet)
 
-            // Compute favorite stylist (stylist assigned to most appointments)
+            // Favorite stylist
             const stylistCounts: Record<string, number> = {}
-            g.appointments.forEach((a) => {
+            clientAppointments.forEach((a) => {
                 const s = a.assignee?.trim()
                 if (s) {
                     stylistCounts[s] = (stylistCounts[s] || 0) + 1
                 }
             })
-            let favorite = "—"
+            let favoriteStylist = "—"
             let maxCount = 0
             Object.entries(stylistCounts).forEach(([stylist, count]) => {
                 if (count > maxCount) {
                     maxCount = count
-                    favorite = stylist
+                    favoriteStylist = stylist
                 }
             })
-            g.favoriteStylist = favorite
+
+            list.push({
+                name,
+                email,
+                phone,
+                key: c.id,
+                appointments: sortedAppts,
+                visitsCount: clientAppointments.length,
+                confirmedCount,
+                pendingCount,
+                cancelledCount,
+                lastVisitDate,
+                lastVisitTime,
+                favoriteStylist,
+                servicesReceived,
+            })
         })
 
-        return groups
-    }, [appointments])
+        return list
+    }, [clients, appointments])
 
     // Derive list of all unique stylists in appointments
     const allStylists = useMemo(() => {
@@ -185,9 +188,9 @@ export default function ClientsPage() {
         return Array.from(set).sort()
     }, [appointments])
 
-    // Filter and search clients
+    // Filter and search active clients
     const filteredClients = useMemo(() => {
-        let list = Object.values(clientsMap)
+        let list = [...clientsList]
 
         // 1. Search query (matches name, email, phone)
         if (searchQuery.trim()) {
@@ -211,15 +214,15 @@ export default function ClientsPage() {
             list = list.filter((c) => c.visitsCount === 1)
         }
 
-        // Default sort: visitsCount descending
+        // Default: Sort by visits count descending
         return list.sort((a, b) => b.visitsCount - a.visitsCount)
-    }, [clientsMap, searchQuery, stylistFilter, frequencyFilter])
+    }, [clientsList, searchQuery, stylistFilter, frequencyFilter])
 
     // Stats calculations
     const stats = useMemo(() => {
-        const uniqueCount = Object.keys(clientsMap).length
+        const uniqueCount = clients.length
         const totalBookings = appointments.length
-        const repeatCount = Object.values(clientsMap).filter((c) => c.visitsCount >= 2).length
+        const repeatCount = clientsList.filter((c) => c.visitsCount >= 2).length
         const repeatPct = uniqueCount > 0 ? Math.round((repeatCount / uniqueCount) * 100) : 0
 
         return {
@@ -227,24 +230,26 @@ export default function ClientsPage() {
             totalBookings,
             repeatPct,
         }
-    }, [clientsMap, appointments])
+    }, [clients, appointments, clientsList])
 
     // Synced state on client selection side-effect
     const activeSelectedClient = useMemo(() => {
         if (!selectedClient) return null
-        return clientsMap[selectedClient.key] || null
-    }, [selectedClient, clientsMap])
+        return clientsList.find((c) => c.key === selectedClient.key) || null
+    }, [selectedClient, clientsList])
+
+    const isGlobalLoading = clientsLoading || appointmentsLoading
 
     return (
         <>
-            {appointmentsLoading && <LoadingOverlay message="Loading clients list…" />}
+            {isGlobalLoading && <LoadingOverlay message="Loading official clients list…" />}
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                    { label: "Total Clients", value: stats.uniqueCount, desc: "Distinct clients recorded" },
-                    { label: "Total Bookings", value: stats.totalBookings, desc: "Lifetime schedules registered" },
-                    { label: "Repeat Client Rate", value: `${stats.repeatPct}%`, desc: "Clients with 2+ bookings" },
+                    { label: "Total Registered Clients", value: stats.uniqueCount, desc: "Active client profiles recorded" },
+                    { label: "Aggregate Bookings", value: stats.totalBookings, desc: "Lifetime schedules registered" },
+                    { label: "Repeat Segment", value: `${stats.repeatPct}%`, desc: "Clients with 2+ bookings" },
                 ].map((s) => (
                     <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
                         <div>
@@ -265,7 +270,7 @@ export default function ClientsPage() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by name, email or mobile number..."
+                        placeholder="Search our database of names, emails or mobile numbers..."
                         className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 bg-white text-gray-900 hover:border-gray-400 transition"
                     />
                 </div>
@@ -301,9 +306,9 @@ export default function ClientsPage() {
             {/* Clients Listing */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-gray-900">Registered Clients Directory</h2>
+                    <h2 className="text-sm font-semibold text-gray-900">Official Client Directory</h2>
                     <p className="text-xs text-gray-400 font-medium">
-                        Showing {filteredClients.length} of {stats.uniqueCount} clients
+                        Showing {filteredClients.length} of {stats.uniqueCount} profiles
                     </p>
                 </div>
 
@@ -312,9 +317,9 @@ export default function ClientsPage() {
                         <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
                             <Users size={22} className="text-gray-400" />
                         </div>
-                        <p className="text-sm font-medium text-gray-900">No clients matched your criteria</p>
+                        <p className="text-sm font-medium text-gray-900">No client profiles found</p>
                         <p className="text-xs text-gray-400 mt-1 max-w-xs">
-                            Try adjusting your filters, resetting the stylist selection, or clearing the search query.
+                            Try adjusting your search criteria, resetting the stylist selection dropdown, or clearing query inputs.
                         </p>
                     </div>
                 ) : (
@@ -350,7 +355,7 @@ export default function ClientsPage() {
                                                     <div>
                                                         <span className="block text-sm font-semibold text-gray-900">{c.name}</span>
                                                         <span className="text-[10px] text-zinc-500 font-medium tracking-wide capitalize">
-                                                            {c.visitsCount >= 2 ? "Repeat Customer" : "New Customer"}
+                                                            {c.visitsCount >= 2 ? "Repeat Customer" : c.visitsCount === 1 ? "New Customer" : "No Appointments Booked"}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -385,12 +390,18 @@ export default function ClientsPage() {
 
                                             {/* Last Visit date */}
                                             <td className="px-6 py-4 whitespace-nowrap text-xs">
-                                                <span className="block font-medium text-gray-900">
-                                                    {formatDateLabel(c.lastVisitDate)}
-                                                </span>
-                                                <span className="block text-[10px] text-gray-400">
-                                                    {formatTime(c.lastVisitTime)}
-                                                </span>
+                                                {c.lastVisitDate !== "—" ? (
+                                                    <>
+                                                        <span className="block font-medium text-gray-900">
+                                                            {formatDateLabel(c.lastVisitDate)}
+                                                        </span>
+                                                        <span className="block text-[10px] text-gray-400">
+                                                            {formatTime(c.lastVisitTime)}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">—</span>
+                                                )}
                                             </td>
 
                                             {/* Assigned/Favorite Stylist */}
@@ -491,54 +502,58 @@ export default function ClientsPage() {
                         <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-1">
                             <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Detailed Booking History</h4>
 
-                            {activeSelectedClient.appointments.map((appt) => {
-                                const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG["PENDING"]
-                                return (
-                                    <div
-                                        key={appt.id}
-                                        className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition space-y-2.5 shadow-sm"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <CalendarDays size={13} className="text-gray-400" />
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {formatDateLabel(appt.date)}
-                                                </span>
-                                                <span className="text-xs text-gray-500">
-                                                    at {formatTime(appt.time)}
+                            {activeSelectedClient.appointments.length === 0 ? (
+                                <p className="text-center text-xs text-gray-400 italic py-10">No appointments recorded for this client yet.</p>
+                            ) : (
+                                activeSelectedClient.appointments.map((appt) => {
+                                    const cfg = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG["PENDING"]
+                                    return (
+                                        <div
+                                            key={appt.id}
+                                            className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition space-y-2.5 shadow-sm"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <CalendarDays size={13} className="text-gray-400" />
+                                                    <span className="text-sm font-semibold text-gray-900">
+                                                        {formatDateLabel(appt.date)}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        at {formatTime(appt.time)}
+                                                    </span>
+                                                </div>
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cfg.color}`}>
+                                                    {cfg.icon}
+                                                    {cfg.label}
                                                 </span>
                                             </div>
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cfg.color}`}>
-                                                {cfg.icon}
-                                                {cfg.label}
-                                            </span>
-                                        </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-700">
-                                            <div className="flex items-center gap-1.5">
-                                                <Scissors size={12} className="text-gray-400 shrink-0" />
-                                                <span className="font-medium text-gray-800">
-                                                    {resolveServices(appt.services, jobTypes)}
-                                                </span>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-700">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Scissors size={12} className="text-gray-400 shrink-0" />
+                                                    <span className="font-medium text-gray-800">
+                                                        {resolveServices(appt.services, jobTypes)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <User size={12} className="text-gray-400 shrink-0" />
+                                                    <span className="text-gray-600">Assigned Stylist: </span>
+                                                    <span className="font-medium text-gray-800">{appt.assignee}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <User size={12} className="text-gray-400 shrink-0" />
-                                                <span className="text-gray-600">Assigned Stylist: </span>
-                                                <span className="font-medium text-gray-800">{appt.assignee}</span>
-                                            </div>
-                                        </div>
 
-                                        {appt.notes && (
-                                            <div className="flex items-start gap-1.5 bg-gray-50 rounded-lg p-2.5 mt-1 border border-gray-100">
-                                                <FileText size={12} className="text-gray-400 mt-0.5 shrink-0" />
-                                                <p className="text-xs text-gray-600 leading-relaxed italic">
-                                                    &ldquo;{appt.notes}&rdquo;
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
+                                            {appt.notes && (
+                                                <div className="flex items-start gap-1.5 bg-gray-50 rounded-lg p-2.5 mt-1 border border-gray-100">
+                                                    <FileText size={12} className="text-gray-400 mt-0.5 shrink-0" />
+                                                    <p className="text-xs text-gray-600 leading-relaxed italic">
+                                                        &ldquo;{appt.notes}&rdquo;
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })
+                            )}
                         </div>
 
                         {/* Modal Footer */}
@@ -556,6 +571,3 @@ export default function ClientsPage() {
         </>
     )
 }
-
-
-
