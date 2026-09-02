@@ -1,7 +1,5 @@
 "use client"
 
-"use client"
-
 import { useState, useMemo, useEffect } from "react"
 import {
     Users, Search, Mail, Phone, CalendarDays, Clock,
@@ -12,6 +10,7 @@ import { useClientStore } from "@/store/clientStore"
 import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/appointmentStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
+import { resolveServices } from "@/lib/constants"
 import DropDown from "@/components/DropDown"
 import LoadingOverlay from "@/components/LoadingOverlay"
 
@@ -36,12 +35,6 @@ function formatDateLabel(ymd: string) {
     }
 }
 
-// Resolve service keys to service names
-function resolveServices(services: unknown, jobTypes: { key: string; value: string }[]): string {
-    const arr: string[] = Array.isArray(services) ? (services as string[])
-        : typeof services === "string" && services ? [services] : []
-    return arr.map((key) => jobTypes.find((jt) => jt.key === key)?.value ?? key).join(", ")
-}
 
 // Color and icon configuration for appointment status badges
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; icon: React.ReactNode }> = {

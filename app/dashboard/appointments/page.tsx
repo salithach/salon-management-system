@@ -11,6 +11,7 @@ import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/app
 import { useStaffAssignmentStore } from "@/store/staffStore"
 import { useMetadataStore } from "@/store/metadataStore"
 import { useAuthStore } from "@/store/authStore"
+import { resolveServices } from "@/lib/constants"
 import DropDown from "@/components/DropDown"
 import LoadingOverlay from "@/components/LoadingOverlay"
 
@@ -40,12 +41,6 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; i
     CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-600",        icon: <XCircle      size={11} /> },
 }
 
-// Resolve service keys → human-readable labels (falls back to key if not found)
-function resolveServices(services: unknown, jobTypes: { key: string; value: string }[]): string {
-    const arr: string[] = Array.isArray(services) ? (services as string[])
-        : typeof services === "string" && services ? [services] : []
-    return arr.map((key) => jobTypes.find((jt) => jt.key === key)?.value ?? key).join(", ")
-}
 
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
     const h = String(i).padStart(2, "0")
