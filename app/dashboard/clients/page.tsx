@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import {
-    Users, Search, Mail, Phone, CalendarDays, Clock,
+    Users, Search, Mail, Phone, CalendarDays,
     Scissors, User, FileText, X, ChevronRight, CheckCircle2,
     AlertCircle, XCircle
 } from "lucide-react"
@@ -321,10 +321,10 @@ export default function ClientsPage() {
                             <thead className="bg-gray-50/55 text-gray-500 uppercase tracking-wider text-[10px] font-bold border-b border-gray-100">
                                 <tr>
                                     <th className="px-6 py-3.5">Client Details</th>
-                                    <th className="px-6 py-3.5">Contact Details</th>
-                                    <th className="px-6 py-3.5 text-center">Visits</th>
-                                    <th className="px-6 py-3.5">Last Visit</th>
-                                    <th className="px-6 py-3.5">Assigned Stylist</th>
+                                    <th className="px-6 py-3.5">Phone</th>
+                                    <th className="px-6 py-3.5">Email</th>
+                                    <th className="px-6 py-3.5 text-center">Appointments</th>
+                                    <th className="px-6 py-3.5">Last Appointment</th>
                                     <th className="px-6 py-3.5 text-right">Action</th>
                                 </tr>
                             </thead>
@@ -354,24 +354,28 @@ export default function ClientsPage() {
                                                 </div>
                                             </td>
 
-                                            {/* Contact details */}
+                                            {/* Phone */}
+                                            <td className="px-6 py-4 text-xs whitespace-nowrap">
+                                                {c.phone ? (
+                                                    <div className="flex items-center gap-1.5 text-gray-700">
+                                                        <Phone size={11} className="text-gray-400 shrink-0" />
+                                                        <span>{c.phone}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">No phone</span>
+                                                )}
+                                            </td>
+
+                                            {/* Email */}
                                             <td className="px-6 py-4 text-xs">
-                                                <div className="space-y-1">
-                                                    {c.phone && (
-                                                        <div className="flex items-center gap-1.5 text-gray-700">
-                                                            <Phone size={11} className="text-gray-400 shrink-0" />
-                                                            <span>{c.phone}</span>
-                                                        </div>
-                                                    )}
-                                                    {c.email ? (
-                                                        <div className="flex items-center gap-1.5 text-gray-600">
-                                                            <Mail size={11} className="text-gray-400 shrink-0" />
-                                                            <span className="truncate">{c.email}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-400 italic">No email</span>
-                                                    )}
-                                                </div>
+                                                {c.email ? (
+                                                    <div className="flex items-center gap-1.5 text-gray-600">
+                                                        <Mail size={11} className="text-gray-400 shrink-0" />
+                                                        <span className="truncate max-w-44 inline-block">{c.email}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">No email</span>
+                                                )}
                                             </td>
 
                                             {/* Visits status count */}
@@ -395,14 +399,6 @@ export default function ClientsPage() {
                                                 ) : (
                                                     <span className="text-gray-400 italic">—</span>
                                                 )}
-                                            </td>
-
-                                            {/* Assigned/Favorite Stylist */}
-                                            <td className="px-6 py-4 whitespace-nowrap text-xs">
-                                                <div className="flex items-center gap-1.5 text-gray-800">
-                                                    <User size={12} className="text-gray-400" />
-                                                    <span className="font-medium">{c.favoriteStylist}</span>
-                                                </div>
                                             </td>
 
                                             {/* Actions */}

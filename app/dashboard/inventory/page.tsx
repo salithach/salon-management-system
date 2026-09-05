@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCircle2, Loader2 } from "lucide-react"
+import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { useInventoryStore, InventoryItem } from "@/store/inventoryStore"
 import DropDown from "@/components/DropDown"
+import LoadingOverlay from "@/components/LoadingOverlay"
 import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_OPTIONS, INVENTORY_UNIT_OPTIONS } from "@/lib/constants"
 
 // ─── Feature flag ────────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ const labelCls = "block text-xs font-bold text-gray-600 mb-1.5"
 
 function stockStatus(item: InventoryItem) {
     if (item.quantity === 0) return { label: "Out of Stock", color: "bg-red-100 text-red-800 border border-red-200" }
-    if (item.quantity <= item.lowStockThreshold) return { label: "Low Stock", color: "bg-amber-100 text-amber-800 border border-amber-200" }
+    if (item.quantity <= item.threshold) return { label: "Low Stock", color: "bg-amber-100 text-amber-800 border border-amber-200" }
     return { label: "In Stock", color: "bg-zinc-100 text-zinc-800 border border-zinc-200" }
 }
 
@@ -25,11 +26,13 @@ function getCategoryLabel(categoryCode: string) {
     return INVENTORY_CATEGORIES.find(c => c.code === code)?.description ?? categoryCode
 }
 
-type FormData = { name: string; category: string; quantity: string; unit: string; lowStockThreshold: string; notes: string }
-const emptyForm: FormData = { name: "", category: "STYLING", quantity: "", unit: "pcs", lowStockThreshold: "3", notes: "" }
+type FormData = { name: string; category: string; quantity: string; unit: string; threshold: string; notes: string }
+const emptyForm: FormData = { name: "", category: "STYLING", quantity: "", unit: "pcs", threshold: "3", notes: "" }
+
+import { useEffect } from "react"
 
 export default function InventoryPage() {
-    const { items, _hasHydrated, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
+    const { items, _hasHydrated, inventoryLoading, fetchInventory, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
 
     const [search, setSearch] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
@@ -37,6 +40,12 @@ export default function InventoryPage() {
     const [editingId, setEditingId] = useState<string | null>(null)
     const [form, setForm] = useState<FormData>(emptyForm)
     const [formError, setFormError] = useState("")
+    const [confirmDel, setConfirmDel] = useState<InventoryItem | null>(null)
+
+    useEffect(() => {
+        fetchInventory().then(() => {})
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // ── Feature flag: show Coming Soon instead of actual content ──────────────
     if (COMING_SOON) return (
@@ -57,11 +66,7 @@ export default function InventoryPage() {
     )
 
 
-    if (!_hasHydrated) return (
-        <div className="flex items-center justify-center h-48 text-gray-400 gap-2">
-            <Loader2 size={18} className="animate-spin" /> Loading inventory…
-        </div>
-    )
+    const showLoading = !_hasHydrated || inventoryLoading
 
     const filtered = items.filter((item) => {
         const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
@@ -70,7 +75,7 @@ export default function InventoryPage() {
         return matchSearch && matchCat
     })
 
-    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.lowStockThreshold).length
+    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.threshold).length
     const outCount = items.filter((i) => i.quantity === 0).length
 
     const openAdd = () => { setForm(emptyForm); setFormError(""); setModal("add") }
@@ -78,7 +83,7 @@ export default function InventoryPage() {
         setForm({
             name: item.name, category: item.category,
             quantity: String(item.quantity), unit: item.unit,
-            lowStockThreshold: String(item.lowStockThreshold),
+            threshold: String(item.threshold),
             notes: item.notes ?? "",
         })
         setEditingId(item.id)
@@ -87,7 +92,7 @@ export default function InventoryPage() {
     }
     const closeModal = () => { setModal(null); setEditingId(null) }
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!form.name.trim()) { setFormError("Item name is required."); return }
         if (!form.quantity || isNaN(Number(form.quantity))) { setFormError("Valid quantity is required."); return }
         const payload = {
@@ -95,26 +100,43 @@ export default function InventoryPage() {
             category: form.category,
             quantity: Number(form.quantity),
             unit: form.unit,
-            lowStockThreshold: Number(form.lowStockThreshold) || 0,
+            threshold: Number(form.threshold) || 0,
             notes: form.notes.trim() || undefined,
         }
-        if (modal === "add") {
-            addItem(payload)
-            toast.success("Item added", { description: `${payload.name} added to inventory.` })
-        } else if (modal === "edit" && editingId) {
-            updateItem(editingId, payload)
-            toast.success("Item updated", { description: `${payload.name} has been updated.` })
+        try {
+            if (modal === "add") {
+                await addItem(payload)
+                toast.success("Item added", { description: `${payload.name} added to inventory.` })
+            } else if (modal === "edit" && editingId) {
+                await updateItem(editingId, payload)
+                toast.success("Item updated", { description: `${payload.name} has been updated.` })
+            }
+            closeModal()
+        } catch (err) {
+            setFormError((err as Error).message)
         }
-        closeModal()
     }
 
-    const handleDelete = (item: InventoryItem) => {
-        deleteItem(item.id)
-        toast.success("Item removed", { description: `${item.name} removed from inventory.` })
+    const handleDelete = async (item: InventoryItem) => {
+        try {
+            await deleteItem(item.id)
+            toast.success("Item removed", { description: `${item.name} removed from inventory.` })
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
+    }
+
+    const handleAdjustQty = async (id: string, delta: number) => {
+        try {
+            await adjustQty(id, delta)
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
     }
 
     return (
         <>
+            {showLoading && <LoadingOverlay message="Loading inventory…" />}
             {/* Alert banner */}
             {(lowCount > 0 || outCount > 0) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
@@ -131,7 +153,7 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: "Total Items",  value: items.length },
-                    { label: "In Stock",     value: items.filter(i => i.quantity > i.lowStockThreshold).length },
+                    { label: "In Stock",     value: items.filter(i => i.quantity > i.threshold).length },
                     { label: "Low Stock",    value: lowCount },
                     { label: "Out of Stock", value: outCount },
                 ].map((s) => (
@@ -211,14 +233,14 @@ export default function InventoryPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => adjustQty(item.id, -1)}
+                                            onClick={() => handleAdjustQty(item.id, -1)}
                                             disabled={item.quantity === 0}
                                             className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-30"
                                         >
                                             <Minus size={13} />
                                         </button>
                                         <button
-                                            onClick={() => adjustQty(item.id, 1)}
+                                            onClick={() => handleAdjustQty(item.id, 1)}
                                             className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
                                         >
                                             <Plus size={13} />
@@ -230,15 +252,15 @@ export default function InventoryPage() {
                                 <div className="mb-3">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-[10px] text-gray-400">Stock level</span>
-                                        <span className="text-[10px] text-gray-400">Threshold: {item.lowStockThreshold}</span>
+                                        <span className="text-[10px] text-gray-400">Threshold: {item.threshold}</span>
                                     </div>
                                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                         <div
                                             className={`h-full rounded-full transition-all duration-500 ${
                                                 item.quantity === 0 ? "bg-red-400" :
-                                                item.quantity <= item.lowStockThreshold ? "bg-amber-400" : "bg-green-400"
+                                                item.quantity <= item.threshold ? "bg-amber-400" : "bg-green-400"
                                             }`}
-                                            style={{ width: `${Math.min(100, (item.quantity / Math.max(item.lowStockThreshold * 3, 1)) * 100)}%` }}
+                                            style={{ width: `${Math.min(100, (item.quantity / Math.max(item.threshold * 3, 1)) * 100)}%` }}
                                         />
                                     </div>
                                 </div>
@@ -256,7 +278,7 @@ export default function InventoryPage() {
                                         <Pencil size={12} /> Edit
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(item)}
+                                        onClick={() => setConfirmDel(item)}
                                         className="flex items-center justify-center gap-1.5 text-xs border border-red-100 text-red-500 py-2 px-3 rounded-lg hover:bg-red-50 transition"
                                     >
                                         <Trash2 size={12} />
@@ -316,7 +338,7 @@ export default function InventoryPage() {
                                 </div>
                                 <div>
                                     <label className={labelCls}>Low Stock Alert At</label>
-                                    <input type="number" min="0" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })}
+                                    <input type="number" min="0" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })}
                                         placeholder="3" className={inputCls} />
                                 </div>
                             </div>
@@ -333,6 +355,38 @@ export default function InventoryPage() {
                                 className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition flex items-center justify-center gap-1.5">
                                 <CheckCircle2 size={14} />
                                 {modal === "add" ? "Add Item" : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Delete confirmation modal */}
+            {confirmDel && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="absolute inset-0" onClick={() => setConfirmDel(null)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 text-gray-900 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <Trash2 size={17} className="text-red-650 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Remove Inventory Item</h3>
+                                <p className="text-xs text-gray-400 mt-1">This action cannot be undone.</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                            Are you sure you want to permanently remove <span className="font-semibold text-gray-700">&ldquo;{confirmDel.name}&rdquo;</span> from your salon inventory directory?
+                        </p>
+                        <div className="flex gap-3 pt-1">
+                            <button onClick={() => setConfirmDel(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 transition font-semibold">Cancel</button>
+                            <button
+                                onClick={async () => {
+                                    await handleDelete(confirmDel)
+                                    setConfirmDel(null)
+                                }}
+                                className="flex-1 py-2.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
+                            >
+                                Remove Item
                             </button>
                         </div>
                     </div>
