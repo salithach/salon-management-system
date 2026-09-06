@@ -338,9 +338,21 @@ export default function AppointmentsPage() {
     }), [allDayAppts, statusFilter, clientSearch])
 
     const pendingCount = appointments.filter((a) => a.status === "PENDING").length
-    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay())
-    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6)
-    const weekCount = appointments.filter((a) => { const d = new Date(a.date + "T00:00:00"); return d >= weekStart && d <= weekEnd }).length
+
+    const current = new Date();
+    const day = current.getDay();
+    // JavaScript treats Sunday as 0. If it's Sunday, we treat it as 7
+    // so we can properly look backward to Monday.
+    const diffToMonday = current.getDate() - day + (day === 0 ? -6 : 1);
+    const startOfWeek = new Date(current.setDate(diffToMonday));
+    // Shift forward 6 days from Monday to hit Sunday
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    const weekCount = appointments.filter((a) => {
+        const d = new Date(a.date + "T00:00:00");
+        return d >= startOfWeek && d <= endOfWeek })
+    .length
+
     const apptDates = useMemo(() => new Set(appointments.map((a) => a.date)), [appointments])
 
     const openNew  = () => setModal({ form: emptyForm(selectedDate), editId: null })
