@@ -25,7 +25,7 @@ const features = [
   {
     icon: CalendarDays,
     title: "Smart Scheduling",
-    desc: "Drag-and-drop appointment calendar with real-time availability, automated reminders, and conflict detection across all staff members.",
+    desc: "Smart appointment calendar with real-time availability and staff allocation.",
     tag: "Appointments",
     gradient: "from-blue-500 to-indigo-500",
     glow: "group-hover:shadow-indigo-500/25",
@@ -33,15 +33,15 @@ const features = [
   {
     icon: Users,
     title: "Client Management",
-    desc: "Maintain rich client profiles with visit history, preferences, allergy notes, and automated birthday messages.",
+    desc: "Maintain rich client profiles with visit history along with their personal information.",
     tag: "Clients",
     gradient: "from-indigo-500 to-sky-500",
     glow: "group-hover:shadow-sky-500/25",
   },
   {
     icon: UserCheck,
-    title: "Staff & Shift Control",
-    desc: "Assign staff to shifts, track daily jobs, monitor individual revenue contribution, and manage time-off requests effortlessly.",
+    title: "Staff Control",
+    desc: "Assign staff to service, track daily jobs, monitor individual revenue contribution, and manage assignments effortlessly.",
     tag: "Staff",
     gradient: "from-blue-500 to-sky-500",
     glow: "group-hover:shadow-sky-500/25",
@@ -49,7 +49,7 @@ const features = [
   {
     icon: Scissors,
     title: "Service Catalogue",
-    desc: "Create and price your full service menu. Group by category, set duration, and link services directly to bookings.",
+    desc: "Create and price your full service menu. Group by category and link services directly to bookings.",
     tag: "Services",
     gradient: "from-rose-500 to-blue-500",
     glow: "group-hover:shadow-blue-500/25",
@@ -125,6 +125,9 @@ const whyItems = [
   { icon: Sparkles, title: "Beautiful UI",      desc: "A clean, modern interface your whole team will love.", gradient: "from-blue-400 to-indigo-500" },
 ];
 
+const statsEnabled = false
+const testimonialsEnabled = false
+
 // ─── Carousel hook ────────────────────────────────────────────────────────────
 
 function useCarousel(length: number, autoInterval = 4000) {
@@ -185,16 +188,18 @@ export default function HomePage() {
       </section>
 
       {/* ── Stats Banner ── */}
-      <section className="bg-linear-to-r from-blue-950/60 via-slate-900 to-blue-950/60 border-y border-white/5 py-14 px-6">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {statItems.map((s) => (
-            <div key={s.label}>
-              <p className="text-3xl font-bold tracking-tight text-blue-400">{s.value}</p>
-              <p className="text-xs text-slate-400 mt-1.5 uppercase tracking-wide">{s.label}</p>
+      {statsEnabled && (
+          <section className="bg-linear-to-r from-blue-950/60 via-slate-900 to-blue-950/60 border-y border-white/5 py-14 px-6">
+            <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+              {statItems.map((s) => (
+                  <div key={s.label}>
+                    <p className="text-3xl font-bold tracking-tight text-blue-400">{s.value}</p>
+                    <p className="text-xs text-slate-400 mt-1.5 uppercase tracking-wide">{s.label}</p>
+                  </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+      )}
 
       {/* ── Features Carousel ── */}
       <section className="py-28 px-6 bg-linear-to-b from-slate-900 via-slate-950 to-slate-950">
@@ -315,65 +320,67 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonials Carousel ── */}
-      <section className="py-28 px-6 bg-linear-to-b from-slate-950 to-slate-900">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-16">
+      {testimonialsEnabled && (
+          <section className="py-28 px-6 bg-linear-to-b from-slate-950 to-slate-900">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-16">
             <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-300 bg-blue-500/10 border border-blue-400/20 px-4 py-1.5 rounded-full mb-5">
               Reviews
             </span>
-            <h2 className="text-4xl font-bold text-white tracking-tight">
-              Loved by salon{" "}
-              <span className="bg-linear-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">professionals</span>
-            </h2>
-            <p className="text-slate-400 mt-3 text-sm">Real feedback from real teams.</p>
-          </div>
+                <h2 className="text-4xl font-bold text-white tracking-tight">
+                  Loved by salon{" "}
+                  <span className="bg-linear-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">professionals</span>
+                </h2>
+                <p className="text-slate-400 mt-3 text-sm">Real feedback from real teams.</p>
+              </div>
 
-          <div className="relative">
-            <div className="overflow-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out"
-                   style={{ transform: `translateX(-${test.index * 100}%)` }}>
-                {testimonials.map((t) => (
-                  <div key={t.name} className="min-w-full px-1">
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-9 flex flex-col gap-5 shadow-sm hover:shadow-lg hover:border-blue-500/30 hover:bg-white/10 transition-all">
-                      <div className="flex gap-1">
-                        {Array.from({ length: t.rating }).map((_, i) => (
-                           <Star key={i} size={15} className="fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                      <p className="text-slate-300 text-base leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
-                      <div className="flex items-center gap-3.5 pt-5 border-t border-white/10">
-                        <div className="w-11 h-11 rounded-full bg-linear-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-md">
-                          {t.name[0]}
+              <div className="relative">
+                <div className="overflow-hidden">
+                  <div className="flex transition-transform duration-500 ease-in-out"
+                       style={{ transform: `translateX(-${test.index * 100}%)` }}>
+                    {testimonials.map((t) => (
+                        <div key={t.name} className="min-w-full px-1">
+                          <div className="bg-white/5 border border-white/10 rounded-2xl p-9 flex flex-col gap-5 shadow-sm hover:shadow-lg hover:border-blue-500/30 hover:bg-white/10 transition-all">
+                            <div className="flex gap-1">
+                              {Array.from({ length: t.rating }).map((_, i) => (
+                                  <Star key={i} size={15} className="fill-amber-400 text-amber-400" />
+                              ))}
+                            </div>
+                            <p className="text-slate-300 text-base leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+                            <div className="flex items-center gap-3.5 pt-5 border-t border-white/10">
+                              <div className="w-11 h-11 rounded-full bg-linear-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-md">
+                                {t.name[0]}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-white">{t.name}</p>
+                                <p className="text-xs text-slate-500">{t.role}</p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-white">{t.name}</p>
-                          <p className="text-xs text-slate-500">{t.role}</p>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
+                </div>
+
+                {[{ dir: "prev", cls: "-left-5", fn: test.prev, Icon: ChevronLeft },
+                  { dir: "next", cls: "-right-5",  fn: test.next, Icon: ChevronRight }]
+                    .map(({ dir, cls, fn, Icon }) => (
+                        <button key={dir} onClick={fn}
+                                className={`absolute ${cls} top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-800 border border-white/10 shadow-md flex items-center justify-center hover:border-blue-400 transition-all`}>
+                          <Icon size={16} className="text-slate-300" />
+                        </button>
+                    ))}
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mt-8">
+                {testimonials.map((_, i) => (
+                    <button key={i} onClick={() => test.setIndex(i)}
+                            className={`rounded-full transition-all duration-300 ${i === test.index ? "w-7 h-2.5 bg-linear-to-r from-blue-500 to-indigo-500" : "w-2.5 h-2.5 bg-slate-700 hover:bg-slate-600"}`} />
                 ))}
               </div>
             </div>
-
-            {[{ dir: "prev", cls: "-left-5", fn: test.prev, Icon: ChevronLeft },
-              { dir: "next", cls: "-right-5",  fn: test.next, Icon: ChevronRight }]
-              .map(({ dir, cls, fn, Icon }) => (
-                <button key={dir} onClick={fn}
-                  className={`absolute ${cls} top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-800 border border-white/10 shadow-md flex items-center justify-center hover:border-blue-400 transition-all`}>
-                  <Icon size={16} className="text-slate-300" />
-                </button>
-              ))}
-          </div>
-
-          <div className="flex items-center justify-center gap-2 mt-8">
-            {testimonials.map((_, i) => (
-              <button key={i} onClick={() => test.setIndex(i)}
-                 className={`rounded-full transition-all duration-300 ${i === test.index ? "w-7 h-2.5 bg-linear-to-r from-blue-500 to-indigo-500" : "w-2.5 h-2.5 bg-slate-700 hover:bg-slate-600"}`} />
-            ))}
-          </div>
-        </div>
-      </section>
+          </section>
+      )}
 
       {/* ── CTA ── */}
       <section className="relative overflow-hidden py-28 px-6 bg-linear-to-br from-slate-950 via-blue-950/60 to-slate-950 border-t border-white/5">
@@ -387,7 +394,7 @@ export default function HomePage() {
             Ready to simplify<br />your salon?
           </h2>
           <p className="text-slate-350 text-sm max-w-md leading-relaxed">
-            Join thousands of salons already running smarter with SalonHQ.
+            Join with SalonHQ to get rid of your pain of handling a salon manually.
           </p>
           <ul className="flex flex-col sm:flex-row gap-5 text-sm text-blue-200/80">
             {["Free 14-day trial", "No setup fees", "Cancel anytime"].map((item) => (

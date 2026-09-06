@@ -263,7 +263,7 @@ export default function DashboardPage() {
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                                                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                                                 <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={48}
-                                                    tickFormatter={(v) => `${v} ${currency}`} />
+                                                    tickFormatter={(v) => `${v}`} />
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
                                                     cursor={{ fill: "#f3f4f6" }}

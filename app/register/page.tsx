@@ -148,7 +148,7 @@ export default function RegisterPage() {
                             { icon: Scissors,     title: "Service Catalogue",   desc: "Build & price your full treatment menu" },
                             { icon: BarChart3,    title: "Revenue Insights",    desc: "Visual reports per staff, service & period" },
                             { icon: Package,      title: "Inventory Management", desc: "Track stock levels for salon products" },
-                            { icon: Bell,         title: "Smart Notifications", desc: "Automated reminders to reduce no-shows" }
+                            { icon: Bell,         title: "Smart Notifications", desc: "Real time toast notifications for every action" }
                         ].map(({ icon: Icon, title, desc }) => (
                             <li key={title} className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">

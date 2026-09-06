@@ -1,16 +1,21 @@
 export default function ContactPage() {
     const info = [
-        { icon: "📍", label: "Headquarters", value: "340 5th Avenue, New York, NY 10001", color: "bg-slate-900/50 border-white/10" },
-        { icon: "📞", label: "Sales",         value: "+1 (800) 555-0190",                 color: "bg-slate-900/50 border-white/10" },
+        // { icon: "📍", label: "Headquarters", value: "340 5th Avenue, New York, NY 10001", color: "bg-slate-900/50 border-white/10" },
+        { icon: "📞", label: "Sales",         value: "+94 (077) 878-7607",                 color: "bg-slate-900/50 border-white/10" },
         { icon: "✉️", label: "Email",          value: "hello@salonhq.com",                  color: "bg-slate-900/50 border-white/10"    },
-        { icon: "🕐", label: "Support Hours",  value: "Mon–Fri 8am–8pm · Sat 9am–5pm EST", color: "bg-slate-900/50 border-white/10" },
+        { icon: "🕐", label: "Support Hours",  value: "Mon–Fri 8am–8pm · Sat 9am–5pm IST", color: "bg-slate-900/50 border-white/10" },
     ];
 
     const trust = [
-        { text: "4,000+ salons worldwide",    icon: "🌐" },
-        { text: "SOC 2 Type II Certified",    icon: "🔐" },
-        { text: "GDPR Compliant",             icon: "✅" },
-        { text: "99.9% uptime SLA",           icon: "⚡" },
+        { text: "Everything In One Place", icon: "🏠" },
+        { text: "Secure & Reliable", icon: "🔐" },
+        { text: "Effortless Scheduling", icon: "📅" },
+        { text: "Powerful Reports", icon: "📊" },
+        { text: "Manage Team Effectively", icon: "👥" },
+        { text: "Simplified Tracking", icon: "📈" },
+        { text: "Smart Inventory Management", icon: "📦" },
+        { text: "Better Client Management", icon: "💇‍♀️" },
+        { text: "Built For Busy Salons", icon: "🚀" },
     ];
 
     return (
@@ -41,7 +46,7 @@ export default function ContactPage() {
             <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-5 gap-10">
 
                 {/* Left — info */}
-                <aside className="md:col-span-2 space-y-7">
+                <aside className="md:col-span-2 space-y-6">
                     <div className="space-y-4">
                         {info.map((i) => (
                             <div key={i.label} className={`flex gap-4 ${i.color} border rounded-2xl px-4 py-4 items-start hover:border-blue-500/20 transition-all group`}>
@@ -55,27 +60,7 @@ export default function ContactPage() {
                             </div>
                         ))}
                     </div>
-
-                    <div className="border border-white/10 rounded-2xl overflow-hidden">
-                        <div className="bg-white/5 border-b border-white/10 px-5 py-3">
-                            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Quick Links</p>
-                        </div>
-                        {[
-                            { label: "Documentation & Guides", href: "#", icon: "📖" },
-                            { label: "Live Chat Support",       href: "#", icon: "💬" },
-                            { label: "Schedule a Demo Call",    href: "#", icon: "📅" },
-                        ].map((l) => (
-                            <a key={l.label} href={l.href}
-                               className="flex items-center justify-between text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all px-5 py-3.5 border-b border-white/5 last:border-0 group">
-                                <div className="flex items-center gap-2.5">
-                                    <span>{l.icon}</span>
-                                    <span>{l.label}</span>
-                                </div>
-                                <span className="text-slate-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all">→</span>
-                            </a>
-                        ))}
-                    </div>
-
+                    <hr className="border-white/10" />
                     <div className="bg-linear-to-br from-slate-950 to-blue-950/65 rounded-2xl p-6 border border-white/10">
                         <p className="text-xs font-bold uppercase tracking-widest text-blue-300 mb-5">Why teams trust us</p>
                         <div className="space-y-3">
@@ -123,24 +108,6 @@ export default function ContactPage() {
                                                className="w-full border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-650 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 transition-all bg-white/5 hover:border-white/20" />
                                     </div>
                                 ))}
-
-                                <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Number of Locations</label>
-                                    <div className="relative">
-                                        <select className="w-full border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 transition-all appearance-none bg-white/5 hover:border-white/20">
-                                            <option value="" className="bg-slate-900 text-slate-300">Select…</option>
-                                            <option className="bg-slate-900 text-slate-300">1 location</option>
-                                            <option className="bg-slate-900 text-slate-300">2 – 5 locations</option>
-                                            <option className="bg-slate-900 text-slate-300">6 – 20 locations</option>
-                                            <option className="bg-slate-900 text-slate-300">20+ locations</option>
-                                        </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <div>
                                     <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">What are you looking for?</label>
