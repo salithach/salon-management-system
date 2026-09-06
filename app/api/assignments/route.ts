@@ -7,7 +7,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const date = req.nextUrl.searchParams.get("date") ?? new Date().toISOString().slice(0, 10)
+        const d = new Date()
+        const defaultDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        const date = req.nextUrl.searchParams.get("date") ?? defaultDate
         const auth = req.headers.get("Authorization") ?? ""
         const res = await fetch(`${API_BASE}/api/v1/assignments?date=${date}`, {
             method: "GET",

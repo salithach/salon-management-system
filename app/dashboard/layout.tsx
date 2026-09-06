@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuthStore, AuthUser } from "@/store/authStore"
 import { useMetadataStore } from "@/store/metadataStore"
+import { isAdmin } from "@/lib/auth"
 import {
     LayoutDashboard, CalendarDays, Users, Scissors,
     UserCheck, BarChart3, LogOut, ChevronRight, Menu, X, Package
@@ -73,7 +74,7 @@ function SidebarContent({ user, pathname, onClose, onLogout }: SidebarContentPro
                     </div>
                     <div>
                         <p className="text-sm font-medium leading-none text-white">My Account</p>
-                        <p className="text-xs text-white/70 mt-0.5">{user?.roles?.[0]?.name ?? "User"}</p>
+                        <p className="text-xs text-white/70 mt-2">{user?.username ?? "User"}</p>
                     </div>
                     <ChevronRight size={14} className="ml-auto text-white/40 group-hover:text-white transition" />
                 </Link>
@@ -96,8 +97,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
-        if (_hasHydrated && !token) router.replace("/login")
-    }, [_hasHydrated, token, router])
+        if (!_hasHydrated) return
+        if (!token) { router.replace("/login"); return }
+        if (isAdmin(user)) { router.replace("/admin"); return }
+    }, [_hasHydrated, token, user, router])
 
     // Fetch metadata (jobTypes + jobRoles) once when the dashboard loads
     useEffect(() => {
@@ -106,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
     }, [_hasHydrated, token, fetchMetadata])
 
-    if (!_hasHydrated || !token) return null
+    if (!_hasHydrated || !token || isAdmin(user)) return null
 
     const handleLogout = () => {
         logout()

@@ -14,6 +14,23 @@ export const toDropDownOptions = (items: OptionItem[]) =>
 export const resolveDescription = (items: OptionItem[], code: string): string =>
     items.find((i) => i.code === code)?.description ?? code
 
+/** Resolve service keys → human-readable labels (falls back to key if not found) */
+export function resolveServices(services: unknown, jobTypes: { key: string; value: string }[]): string {
+    const arr: string[] = Array.isArray(services) ? (services as string[])
+        : typeof services === "string" && services ? [services] : []
+    return arr.map((key) => jobTypes.find((jt) => jt.key === key)?.value ?? key).join(", ")
+}
+
+export const REQUEST_HEADERS = {
+    AUTHORIZATION: 'Authorization',
+    TENANT_ID: 'X-Tenant-Id',
+    CONTENT_TYPE: 'Content-Type',
+}
+
+export const CONTENT_TYPES = {
+    JSON: 'application/json',
+}
+
 // ── Inventory categories ──────────────────────────────────────────────────────
 export const INVENTORY_CATEGORIES: OptionItem[] = [
     { code: "ALL",       description: "All" },

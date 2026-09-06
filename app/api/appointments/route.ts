@@ -7,8 +7,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
+        const date = req.nextUrl.searchParams.get("date")
+        const url  = `${API_BASE}/api/v1/appointments${date ? `?date=${date}` : ""}`
         const auth = req.headers.get("Authorization") ?? ""
-        const res = await fetch(`${API_BASE}/api/v1/metadata/jobTypes`, {
+        const res = await fetch(url, {
             method: "GET",
             headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
         })
@@ -16,20 +18,16 @@ export async function GET(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            const raw = data?.errors?.[0]?.message
-            const message =
-                (typeof raw === "object" ? raw?.message : raw) ||
-                data?.errors?.[0] ||
-                "Failed to fetch job types"
+            const raw     = data?.message
+            const message = (typeof raw === "object" ? raw?.message : raw)
+                || data?.errors?.[0]?.message
+                || "Failed to fetch appointments"
             return NextResponse.json({ message }, { status: res.status })
         }
 
         return NextResponse.json(data, { status: 200 })
     } catch {
-        return NextResponse.json(
-            { message: "Failed to connect to server" },
-            { status: 502 }
-        )
+        return NextResponse.json({ message: "Failed to connect to appointments server" }, { status: 502 })
     }
 }
 
@@ -38,9 +36,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const auth = req.headers.get("Authorization") ?? ""
         const body = await req.json()
-        const res = await fetch(`${API_BASE}/api/v1/metadata/jobTypes`, {
+        const auth = req.headers.get("Authorization") ?? ""
+
+        const res = await fetch(`${API_BASE}/api/v1/appointments`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(auth ? { Authorization: auth } : {}) },
             body: JSON.stringify(body),
@@ -49,20 +48,16 @@ export async function POST(req: NextRequest) {
         const data = await res.json()
 
         if (!res.ok) {
-            const raw = data?.errors?.[0]?.message
-            const message =
-                (typeof raw === "object" ? raw?.message : raw) ||
-                data?.errors?.[0] ||
-                "Failed to create job type"
+            const raw     = data?.message
+            const message = (typeof raw === "object" ? raw?.message : raw)
+                || data?.errors?.[0]?.message
+                || "Failed to create appointment"
             return NextResponse.json({ message }, { status: res.status })
         }
 
-        return NextResponse.json(data, { status: res.status })
+        return NextResponse.json(data, { status: 201 })
     } catch {
-        return NextResponse.json(
-            { message: "Failed to connect to server" },
-            { status: 502 }
-        )
+        return NextResponse.json({ message: "Failed to connect to appointments server" }, { status: 502 })
     }
 }
 

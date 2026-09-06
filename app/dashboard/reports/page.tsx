@@ -12,6 +12,11 @@ import {
     XAxis,
     YAxis
 } from "recharts";
+import { BarChart3 } from "lucide-react"
+
+// ─── Feature flag ────────────────────────────────────────────────────────────
+const COMING_SOON = true
+// ─────────────────────────────────────────────────────────────────────────────
 
 const monthlyRevenue = [
     { month: "Nov", revenue: 4800, appointments: 68 },
@@ -55,6 +60,23 @@ const appointmentStatus = [
 const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.revenue))
 
 export default function ReportsPage() {
+    if (COMING_SOON) return (
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                <BarChart3 size={28} className="text-zinc-400" />
+            </div>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900">Reports — Coming Soon</h2>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                    Revenue insights, appointment analytics and staff performance reports are on their way.
+                </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                In Development
+            </span>
+        </div>
+    )
+
     return (
         <>
             {/* KPI cards */}

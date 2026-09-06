@@ -14,8 +14,8 @@ export default function Navbar() {
     const pathname = usePathname()
     const isLoggedIn = !!token
 
-    // Dashboard has its own sidebar and top bar — suppress the global navbar there
-    if (pathname?.startsWith("/dashboard")) return null
+    // Dashboard and admin panel have their own sidebar/top bar — suppress the global navbar there
+    if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin")) return null
 
     const handleLogout = () => {
         logout()
@@ -139,7 +139,7 @@ export default function Navbar() {
             </aside>
 
             {/* Top bar (sticky) */}
-            <div className="sticky top-0 left-0 w-full z-30 bg-zinc-800 backdrop-blur-md border-b border-white/10">
+            <div className="sticky top-0 left-0 w-full z-30 bg-slate-950/85 backdrop-blur-md border-b border-white/10">
                 <div className="w-full flex items-center justify-between h-16 px-6 lg:px-4">
 
                     {/* Logo */}
@@ -157,7 +157,7 @@ export default function Navbar() {
                                     className="text-white/70 hover:text-white text-sm relative group transition"
                                 >
                                     {link.label}
-                                    <span className="absolute left-0 -bottom-1 h-[2px] w-0 bg-white transition-all group-hover:w-full" />
+                                    <span className="absolute left-0 -bottom-1 h-0.5 w-0 bg-white transition-all group-hover:w-full" />
                                 </Link>
                             ))}
                         </nav>
