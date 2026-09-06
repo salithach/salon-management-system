@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { Store, User, Lock, Trash2, MapPin, Globe, AtSign, Save, Pencil, X } from "lucide-react"
+import {Store, User, Lock, Trash2, MapPin, Globe, AtSign, Save, Pencil, X, AlertTriangle} from "lucide-react"
 import DropDown from "@/components/DropDown"
 import { toast } from "sonner"
 import { useSalonStore } from "@/store/salonStore"
@@ -133,7 +133,12 @@ export default function ProfilePage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-
+            {/* Profile edit alert */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
+                <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+                <p className="text-sm text-amber-700"><span>Profile edit feature is coming soon.</span>
+                </p>
+            </div>
             {/* Profile header */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center gap-5">
                 <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center text-2xl font-semibold shrink-0">
@@ -143,7 +148,7 @@ export default function ProfilePage() {
                     <p className="text-lg font-semibold text-gray-900">{user?.owner?.name ?? user?.username ?? ""}</p>
                     <p className="text-sm text-gray-500">{user?.email ?? ""}</p>
                     <span className="inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-black text-white">
-                        {role}
+                        {user?.username}
                     </span>
                 </div>
             </div>
@@ -170,7 +175,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={openEditSalon}
+                        <button disabled={true} onClick={openEditSalon}
                             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black border border-gray-200 px-3 py-1.5 rounded-lg transition">
                             <Pencil size={12} /> Edit
                         </button>
@@ -291,7 +296,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={openEditPersonal}
+                        <button disabled={true} onClick={openEditPersonal}
                             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black border border-gray-200 px-3 py-1.5 rounded-lg transition">
                             <Pencil size={12} /> Edit
                         </button>
@@ -354,7 +359,7 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ) : (
-                        <button onClick={() => setShowPassword(true)}
+                        <button disabled={true} onClick={() => setShowPassword(true)}
                             className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black border border-gray-200 px-3 py-1.5 rounded-lg transition">
                             <Pencil size={12} /> Change
                         </button>
@@ -387,24 +392,24 @@ export default function ProfilePage() {
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-white rounded-xl border border-red-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-red-100 flex items-center gap-2">
-                    <Trash2 size={16} className="text-red-500 shrink-0" />
-                    <h2 className="text-sm font-semibold text-red-600">Danger Zone</h2>
-                </div>
-                <div className="p-6 flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-900">Delete account</p>
-                        <p className="text-xs text-gray-400 mt-0.5">Permanently remove your account and all data</p>
-                    </div>
-                    <button
-                        onClick={() => { setDeleteConfirmText(""); setShowDeleteModal(true) }}
-                        className="text-sm border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2"
-                    >
-                        <Trash2 size={14} /> Delete Account
-                    </button>
-                </div>
-            </div>
+            {/*<div className="bg-white rounded-xl border border-red-100 shadow-sm overflow-hidden">*/}
+            {/*    <div className="px-6 py-4 border-b border-red-100 flex items-center gap-2">*/}
+            {/*        <Trash2 size={16} className="text-red-500 shrink-0" />*/}
+            {/*        <h2 className="text-sm font-semibold text-red-600">Danger Zone</h2>*/}
+            {/*    </div>*/}
+            {/*    <div className="p-6 flex items-center justify-between">*/}
+            {/*        <div>*/}
+            {/*            <p className="text-sm font-medium text-gray-900">Delete account</p>*/}
+            {/*            <p className="text-xs text-gray-400 mt-0.5">Permanently remove your account and all data</p>*/}
+            {/*        </div>*/}
+            {/*        <button*/}
+            {/*            onClick={() => { setDeleteConfirmText(""); setShowDeleteModal(true) }}*/}
+            {/*            className="text-sm border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-2"*/}
+            {/*        >*/}
+            {/*            <Trash2 size={14} /> Delete Account*/}
+            {/*        </button>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (

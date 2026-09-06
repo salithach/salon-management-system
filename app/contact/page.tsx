@@ -3,7 +3,7 @@ export default function ContactPage() {
         // { icon: "📍", label: "Headquarters", value: "340 5th Avenue, New York, NY 10001", color: "bg-slate-900/50 border-white/10" },
         { icon: "📞", label: "Sales",         value: "+94 (077) 878-7607",                 color: "bg-slate-900/50 border-white/10" },
         { icon: "✉️", label: "Email",          value: "hello@salonhq.com",                  color: "bg-slate-900/50 border-white/10"    },
-        { icon: "🕐", label: "Support Hours",  value: "Mon–Fri 8am–8pm · Sat 9am–5pm IST", color: "bg-slate-900/50 border-white/10" },
+        { icon: "🕐", label: "Support Hours",  value: "Mon–Fri 8am–8pm | Sat 9am–5pm IST", color: "bg-slate-900/50 border-white/10" },
     ];
 
     const trust = [
