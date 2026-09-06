@@ -121,7 +121,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-base font-semibold text-gray-900">{editId ? "Edit Appointment" : "New Booking"}</h3>
+                        <h3 className="text-base font-semibold text-gray-900">{editId ? "Edit Appointment" : "New Appointment"}</h3>
                         <p className="text-xs text-gray-400 mt-0.5">Fill in the appointment details below</p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition"><X size={20} /></button>
@@ -206,7 +206,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                     <button onClick={onClose} disabled={saving} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition disabled:opacity-50">Cancel</button>
                     <button onClick={handleSave} disabled={saving}
                         className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition disabled:opacity-50">
-                        {saving ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : editId ? "Save Changes" : "Create Booking"}
+                        {saving ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : editId ? "Save Changes" : "Create Appointment"}
                     </button>
                 </div>
             </div>
@@ -434,7 +434,7 @@ export default function AppointmentsPage() {
                             </p>
                         </div>
                         <button onClick={openNew} className="flex items-center gap-1.5 text-sm bg-zinc-800 text-white px-4 py-2 rounded-lg hover:bg-zinc-700 transition">
-                            <Plus size={14} /> New Booking
+                            <Plus size={14} /> New Appointment
                         </button>
                     </div>
 
@@ -479,7 +479,7 @@ export default function AppointmentsPage() {
                                 <div>
                                     {allDayAppts.length > 0
                                         ? <><p className="text-sm font-medium text-gray-600">No matches</p><p className="text-xs text-gray-400 mt-0.5">Try a different filter or search</p></>
-                                        : <><p className="text-sm font-medium text-gray-600">No bookings for this day</p><p className="text-xs text-gray-400 mt-0.5">Click &quot;New Booking&quot; to schedule one</p></>
+                                        : <><p className="text-sm font-medium text-gray-600">No appointments for this day</p><p className="text-xs text-gray-400 mt-0.5">Click &quot;New Appointment&quot; to schedule one</p></>
                                     }
                                 </div>
                             </div>

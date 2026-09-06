@@ -15,6 +15,7 @@ import { JobDetails, JobList, useJobStore } from "@/store/jobStore"
 import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
+import {useAppointmentStore} from "@/store/appointmentStore";
 
 
 export default function DashboardPage() {
@@ -25,6 +26,8 @@ export default function DashboardPage() {
             fetchAssignments:   s.fetchAssignments,
         }))
     )
+    const { fetchAppointments, appointments } = useAppointmentStore()
+    const clientsToday = appointments.map((a) => a.client.id).filter(Boolean)
     const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady, fetchProfile, user } = useAuthStore()
@@ -46,6 +49,7 @@ export default function DashboardPage() {
         if (!user) fetchProfile().then(() => {})
         fetchAssignments().then(() => {})
         fetchJobs().then(() => {})
+        fetchAppointments().then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authReady])
 
@@ -75,7 +79,7 @@ export default function DashboardPage() {
             await fetchJobs()
             closeModal()
             toast.success("Job added", {
-                description: `${service.map(resolveLabel).join(" + ")} · $${parseFloat(price).toFixed(2)} for ${modalMember.name}`,
+                description: `${service.map(resolveLabel).join(" + ")} | ${parseFloat(price).toFixed(2)}${currency} for ${modalMember.name}`,
             })
         } catch (err) {
             toast.error((err as Error).message)
@@ -151,8 +155,8 @@ export default function DashboardPage() {
                         <p className="text-xs text-gray-600 font-semibold">Today&apos;s Appointments</p>
                         <CalendarDays size={15} className="text-gray-300" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">—</p>
-                    <p className="text-xs text-gray-500">Coming soon</p>
+                    <p className="text-3xl font-bold text-gray-900">{appointments.length}</p>
+                    <p className="text-xs text-gray-500">from {clientsToday.length} clients</p>
                 </div>
             </div>
 

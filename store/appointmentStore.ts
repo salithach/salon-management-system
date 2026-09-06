@@ -9,6 +9,7 @@ export type Client = {
     name: string
     phone?: string
     email?: string
+    id ?: string
 }
 
 export type Appointment = {
@@ -64,8 +65,9 @@ function normalizeAppointment(raw: unknown): Appointment {
 
     const rawClient = a.client as Record<string, string> | undefined
     const client: Client = rawClient && typeof rawClient === "object"
-        ? { name: rawClient.name ?? "", phone: rawClient.phone ?? undefined, email: rawClient.email ?? undefined }
+        ? { id: rawClient.id ?? "", name: rawClient.name ?? "", phone: rawClient.phone ?? undefined, email: rawClient.email ?? undefined }
         : {
+            id: "",
             name:  String(a.clientName ?? a.client_name ?? ""),
             phone: a.clientPhone ? String(a.clientPhone) : undefined,
             email: a.clientEmail ? String(a.clientEmail) : undefined,

@@ -65,7 +65,7 @@ const features = [
   {
     icon: Zap,
     title: "Instant Notifications",
-    desc: "Real-time toast alerts for new bookings, cancellations, and staff check-ins keep the whole team in sync throughout the day.",
+    desc: "Real-time toast alerts for new appointments, cancellations, and staff check-ins keep the whole team in sync throughout the day.",
     tag: "Alerts",
     gradient: "from-amber-500 to-blue-500",
     glow: "group-hover:shadow-blue-500/25",
