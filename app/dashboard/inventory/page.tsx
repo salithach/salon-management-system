@@ -26,20 +26,26 @@ function getCategoryLabel(categoryCode: string) {
     return INVENTORY_CATEGORIES.find(c => c.code === code)?.description ?? categoryCode
 }
 
-type FormData = { name: string; category: string; quantity: string; unit: string; threshold: string; notes: string }
-const emptyForm: FormData = { name: "", category: "STYLING", quantity: "", unit: "pcs", threshold: "3", notes: "" }
+type AddEditFormData = { name: string; price: number; category: string; quantity: string; unit: string; threshold: string; notes: string }
+type SaleFormData = { id: string, name: string; price: number; quantity: number, stock: number }
+
+const emptyAddEditForm: AddEditFormData = { name: "", price: 0.00, category: "STYLING", quantity: "", unit: "pcs", threshold: "3", notes: "" }
+const emptySaleForm: SaleFormData = { id: "", name: "", price: 0.00, quantity: 0, stock: 0 }
 
 import { useEffect } from "react"
 
 export default function InventoryPage() {
-    const { items, _hasHydrated, inventoryLoading, fetchInventory, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
+    const { items, _hasHydrated, inventoryLoading, fetchInventory, addItem, updateItem, deleteItem, adjustQty, sellItem } = useInventoryStore()
 
     const [search, setSearch] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [modal, setModal] = useState<"add" | "edit" | null>(null)
+    const [saleModal, setSaleModal] = useState<"sell" | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [form, setForm] = useState<FormData>(emptyForm)
+    const [addEditForm, setAddEditForm] = useState<AddEditFormData>(emptyAddEditForm)
+    const [saleForm, setSaleForm] = useState<SaleFormData>(emptySaleForm)
     const [formError, setFormError] = useState("")
+    const [saleFormError, setSaleFormError] = useState("")
     const [confirmDel, setConfirmDel] = useState<InventoryItem | null>(null)
 
     useEffect(() => {
@@ -78,30 +84,48 @@ export default function InventoryPage() {
     const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.threshold).length
     const outCount = items.filter((i) => i.quantity === 0).length
 
-    const openAdd = () => { setForm(emptyForm); setFormError(""); setModal("add") }
+    const openAdd = () => { setAddEditForm(emptyAddEditForm); setFormError(""); setModal("add") }
+
     const openEdit = (item: InventoryItem) => {
-        setForm({
+        setAddEditForm({
             name: item.name, category: item.category,
             quantity: String(item.quantity), unit: item.unit,
             threshold: String(item.threshold),
+            price: item.price ?? 0.00,
             notes: item.notes ?? "",
         })
         setEditingId(item.id)
         setFormError("")
         setModal("edit")
     }
+
+    const openSale = (item: InventoryItem) => {
+        setSaleForm({
+            id: item.id,
+            name: item.name,
+            price: item.price ?? 0.00,
+            quantity: 1,
+            stock: item.quantity
+        })
+        setSaleModal("sell")
+        setSaleFormError("")
+    }
+
     const closeModal = () => { setModal(null); setEditingId(null) }
 
+    const closeSaleModal = () => { setSaleModal(null) }
+
     const handleSave = async () => {
-        if (!form.name.trim()) { setFormError("Item name is required."); return }
-        if (!form.quantity || isNaN(Number(form.quantity))) { setFormError("Valid quantity is required."); return }
+        if (!addEditForm.name.trim()) { setFormError("Item name is required."); return }
+        if (!addEditForm.quantity || isNaN(Number(addEditForm.quantity))) { setFormError("Valid quantity is required."); return }
         const payload = {
-            name: form.name.trim(),
-            category: form.category,
-            quantity: Number(form.quantity),
-            unit: form.unit,
-            threshold: Number(form.threshold) || 0,
-            notes: form.notes.trim() || undefined,
+            name: addEditForm.name.trim(),
+            category: addEditForm.category,
+            quantity: Number(addEditForm.quantity),
+            unit: addEditForm.unit,
+            price: Number(addEditForm.price),
+            threshold: Number(addEditForm.threshold) || 0,
+            notes: addEditForm.notes.trim() || undefined,
         }
         try {
             if (modal === "add") {
@@ -131,6 +155,26 @@ export default function InventoryPage() {
             await adjustQty(id, delta)
         } catch (err) {
             toast.error((err as Error).message)
+        }
+    }
+
+    const handleSale = async () => {
+        const payload = {
+            id: saleForm.id,
+            name: saleForm.name,
+            price: Number(saleForm.price),
+            quantity: Number(saleForm.quantity),
+        }
+        if (!saleForm.price) { setSaleFormError("Price is required."); return }
+        if (!saleForm.quantity || isNaN(Number(saleForm.quantity)) || saleForm.quantity <= 0) { setSaleFormError("Valid quantity is required."); return }
+        try {
+            await sellItem(payload)
+            setSaleFormError("")
+            toast.success("Item sold", { description: `${payload.name} has been sold by ${payload.quantity} at $${payload.price} each.` })
+            fetchInventory().then(() => {})
+            closeSaleModal()
+        } catch (err) {
+            setSaleFormError((err as Error).message)
         }
     }
 
@@ -272,6 +316,12 @@ export default function InventoryPage() {
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 border-t border-gray-50 pt-3">
                                     <button
+                                        onClick={() => openSale(item)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-zinc-800 text-white px-4 py-2 rounded-lg hover:bg-zinc-700 transition shrink-0"
+                                    >
+                                        <Pencil size={12} /> Sell
+                                    </button>
+                                    <button
                                         onClick={() => openEdit(item)}
                                         className="flex-1 flex items-center justify-center gap-1.5 text-xs border border-gray-200 py-2 rounded-lg hover:bg-gray-50 transition"
                                     >
@@ -309,7 +359,7 @@ export default function InventoryPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className={labelCls}>Item Name</label>
-                                <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                <input type="text" value={addEditForm.name} onChange={e => setAddEditForm({ ...addEditForm, name: e.target.value })}
                                     placeholder="e.g. Hair Wax" className={inputCls} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -317,34 +367,39 @@ export default function InventoryPage() {
                                     <label className={labelCls}>Category</label>
                                     <DropDown
                                         options={INVENTORY_CATEGORY_OPTIONS}
-                                        value={form.category}
-                                        onChange={(v) => setForm({ ...form, category: v })}
+                                        value={addEditForm.category}
+                                        onChange={(v) => setAddEditForm({ ...addEditForm, category: v })}
                                     />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Unit</label>
                                     <DropDown
                                         options={INVENTORY_UNIT_OPTIONS}
-                                        value={form.unit}
-                                        onChange={(v) => setForm({ ...form, unit: v })}
+                                        value={addEditForm.unit}
+                                        onChange={(v) => setAddEditForm({ ...addEditForm, unit: v })}
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelCls}>Quantity</label>
-                                    <input type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })}
+                                    <input type="number" min="0" value={addEditForm.quantity} onChange={e => setAddEditForm({ ...addEditForm, quantity: e.target.value })}
                                         placeholder="0" className={inputCls} />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Low Stock Alert At</label>
-                                    <input type="number" min="0" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })}
+                                    <input type="number" min="0" value={addEditForm.threshold} onChange={e => setAddEditForm({ ...addEditForm, threshold: e.target.value })}
                                         placeholder="3" className={inputCls} />
                                 </div>
                             </div>
                             <div>
+                                <label className={labelCls}>Item Price</label>
+                                <input type="number" min="0" value={addEditForm.price} onChange={e => setAddEditForm({ ...addEditForm, price: Number(e.target.value) })}
+                                      className={inputCls} />
+                            </div>
+                            <div>
                                 <label className={labelCls}>Notes <span className="text-gray-400">(optional)</span></label>
-                                <input type="text" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+                                <input type="text" value={addEditForm.notes} onChange={e => setAddEditForm({ ...addEditForm, notes: e.target.value })}
                                     placeholder="e.g. Order from supplier X" className={inputCls} />
                             </div>
                         </div>
@@ -360,6 +415,53 @@ export default function InventoryPage() {
                     </div>
                 </div>
             )}
+
+            {/* Sell Modal */}
+            {saleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">{saleModal === "sell" ? "Sell Item" : "Item"}</h3>
+                            </div>
+                            <button onClick={closeSaleModal} className="text-gray-400 hover:text-gray-700 transition"><X size={20} /></button>
+                        </div>
+                        <div className="mb-4 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900">
+                            <p className="text-sm"><span className="text-gray-900 font-semibold">Name</span>: {saleForm.name}</p>
+                            <p className="text-xs text-gray-500 mt-2">Current Stock: {saleForm.stock}</p>
+                        </div>
+
+                        {saleFormError && (
+                            <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{saleFormError}</div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Sale Quantity</label>
+                                    <input type="number" min="0" value={saleForm.quantity} onChange={e => setSaleForm({ ...saleForm, quantity: Number(e.target.value) })}
+                                           placeholder="0" className={inputCls} />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Item Price</label>
+                                    <input type="number" min="0" value={saleForm.price} onChange={e => setSaleForm({ ...saleForm, price: Number(e.target.value) })}
+                                           className={inputCls} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={closeSaleModal} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                            <button onClick={() => handleSale()}
+                                    className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition flex items-center justify-center gap-1.5">
+                                <CheckCircle2 size={14} />
+                                {saleModal === "sell" ? "Sell Item" : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Delete confirmation modal */}
             {confirmDel && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">

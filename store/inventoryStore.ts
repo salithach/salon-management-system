@@ -8,8 +8,16 @@ export type InventoryItem = {
     category: string
     quantity: number
     unit: string
+    price: number
     threshold: number
     notes?: string
+}
+
+export type InventorySale = {
+    id: string
+    name: string
+    quantity: number
+    price: number
 }
 
 const authHeaders = (): Record<string, string> => {
@@ -32,6 +40,7 @@ type InventoryState = {
     setHasHydrated: (v: boolean) => void
     fetchInventory: () => Promise<void>
     addItem: (item: Omit<InventoryItem, "id">) => Promise<void>
+    sellItem: (item: InventorySale) => Promise<void>
     updateItem: (id: string, updates: Partial<Omit<InventoryItem, "id">>) => Promise<void>
     deleteItem: (id: string) => Promise<void>
     adjustQty: (id: string, delta: number) => Promise<void>
@@ -45,6 +54,7 @@ function normalizeItem(raw: unknown): InventoryItem {
         category: String(r.category ?? ""),
         quantity: Number(r.quantity ?? 0),
         unit: String(r.unit ?? ""),
+        price: Number(r.price ?? 0),
         threshold: Number(r.lowStockThreshold ?? r.threshold ?? 0),
         notes: r.notes ? String(r.notes) : undefined,
     }
@@ -104,6 +114,23 @@ export const useInventoryStore = create<InventoryState>()(
             const newItem = normalizeItem(json?.data ?? json)
             set((s) => ({
                 items: [...s.items, newItem],
+            }))
+        },
+
+        sellItem: async (item) => {
+            const res = await apiFetch(`/api/inventory/${item.id}/sales`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...authHeaders() },
+                body: JSON.stringify(item),
+            })
+            const json = await res.json().catch(() => ({}))
+            if (!res.ok) {
+                const msg = json?.message || json?.errors?.[0]?.message || "Failed to sell inventory item"
+                throw new Error(msg)
+            }
+            const soldItem = normalizeItem(json?.data ?? json)
+            set((s) => ({
+                items: s.items.map((i) => i.id === soldItem.id ? soldItem : i),
             }))
         },
 
