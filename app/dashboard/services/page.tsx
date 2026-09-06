@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Tag, Plus, X, Trash2, Layers } from "lucide-react"
 import { toast } from "sonner"
 import { useMetadataStore, JobType } from "@/store/metadataStore"
-import DropDown from "@/components/DropDown"
 
 const emptyForm = { key: "", value: "", category: "" }
 
@@ -23,13 +22,6 @@ export default function ServicesPage() {
         "All",
         ...Array.from(new Set(jobTypes.map((t) => t.category ?? "Uncategorized"))).sort(),
     ]
-
-    // DropDown options — { label: category string, value: category string }
-    const categoryOptions = Array.from(
-        new Set(jobTypes.map((t) => t.category).filter((c): c is string => !!c))
-    )
-        .sort()
-        .map((cat) => ({ label: cat, value: cat }))
 
     const filtered = activeCategory === "All"
         ? jobTypes
@@ -241,18 +233,13 @@ export default function ServicesPage() {
                                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
                                     Service Category <span className="text-red-400">*</span>
                                 </label>
-                                <DropDown
-                                    options={categoryOptions}
+                                <input
+                                    type="category"
                                     value={form.category}
-                                    onChange={(v) => setForm({ ...form, category: v })}
-                                    placeholder="Select a category…"
-                                    disabled={categoryOptions.length === 0}
+                                    onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
+                                    placeholder="e.g. HAIR"
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white font-mono"
                                 />
-                                {categoryOptions.length === 0 && (
-                                    <p className="text-[10px] text-gray-400 mt-1">
-                                        No categories yet — add your first service to create one.
-                                    </p>
-                                )}
                             </div>
                         </div>
 
