@@ -27,6 +27,7 @@ type ClientState = {
     clientsLoading: boolean
     error: string | null
     fetchClients: () => Promise<void>
+    deleteClient: (id: string) => Promise<void>
 }
 
 function normalizeClient(raw: any): ClientInfo {
@@ -75,7 +76,40 @@ export const useClientStore = create<ClientState>()(
                 await wait()
                 set({ error: (err as Error).message, clientsLoading: false })
             }
-        }
+        },
+
+        deleteClient: async (id) => {
+            const previousClients = get().clients
+
+            // Optimistic removal
+            set((state) => ({
+                clients: state.clients.filter((client) => client.id !== id),
+            }))
+
+            try {
+                const res = await apiFetch(`/api/clients/${id}`, {
+                    method: "DELETE",
+                    headers: authHeaders(),
+                })
+
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}))
+
+                    // Roll back
+                    set({ clients: previousClients })
+
+                    const message =
+                        json?.message ||
+                        json?.errors?.[0]?.message ||
+                        "Failed to delete client"
+
+                    throw new Error(message)
+                }
+            } catch (err) {
+                set({ clients: previousClients })
+                throw err
+            }
+        },
     })
 )
 

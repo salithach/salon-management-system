@@ -99,7 +99,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
             }
             if (editId) {
                 await updateAppointment(editId, payload)
-                toast.success("Appointment updated")
+                toast.success(`${form.clientName}'s appointment on ${form.date} is updated`)
             } else {
                 await addAppointment(payload)
                 toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
@@ -504,7 +504,7 @@ export default function AppointmentsPage() {
                                 onStatusChange={async (s) => {
                                     try {
                                         await updateStatus(appt.id, s)
-                                        toast.success(`Marked as ${STATUS_CONFIG[s].label}`)
+                                        toast.success(`Marked ${appt.client.name}'s appointment on ${appt.date} as ${STATUS_CONFIG[s].label}`)
                                     } catch (err) {
                                         toast.error((err as Error).message)
                                     }

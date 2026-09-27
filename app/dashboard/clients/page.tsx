@@ -4,8 +4,9 @@ import { useState, useMemo, useEffect } from "react"
 import {
     Users, Search, Mail, Phone, CalendarDays,
     Scissors, User, FileText, X, ChevronRight, CheckCircle2,
-    AlertCircle, XCircle
+    AlertCircle, XCircle, Trash2
 } from "lucide-react"
+import { toast } from "sonner"
 import { useClientStore } from "@/store/clientStore"
 import { useAppointmentStore, Appointment, AppointmentStatus } from "@/store/appointmentStore"
 import { useMetadataStore } from "@/store/metadataStore"
@@ -60,7 +61,7 @@ interface ClientGroup {
 }
 
 export default function ClientsPage() {
-    const { clients, clientsLoading, fetchClients } = useClientStore()
+    const { clients, clientsLoading, fetchClients, deleteClient } = useClientStore()
     const { appointments, appointmentsLoading, fetchAppointments } = useAppointmentStore()
     const { jobTypes, fetchMetadata } = useMetadataStore()
     const { user } = useAuthStore()
@@ -69,6 +70,8 @@ export default function ClientsPage() {
     const [stylistFilter, setStylistFilter] = useState("ALL")
     const [frequencyFilter, setFrequencyFilter] = useState("ALL")
     const [selectedClient, setSelectedClient] = useState<ClientGroup | null>(null)
+    const [confirmDelete, setConfirmDelete] = useState<ClientGroup | null>(null)
+    const [deleting, setDeleting] = useState(false)
 
     // Load live clients collection, appointments, and metadata on mount
     useEffect(() => {
@@ -232,6 +235,33 @@ export default function ClientsPage() {
     }, [selectedClient, clientsList])
 
     const isGlobalLoading = clientsLoading || appointmentsLoading
+
+    const handleDeleteClient = async () => {
+        if (!confirmDelete) return
+
+        setDeleting(true)
+
+        try {
+            await deleteClient(confirmDelete.key)
+
+            toast.success(
+                `"${confirmDelete.name}" removed from clients`
+            )
+
+            if (selectedClient?.key === confirmDelete.key) {
+                setSelectedClient(null)
+            }
+
+            setConfirmDelete(null)
+        } catch (err) {
+            toast.error(
+                (err as Error).message ||
+                "Failed to delete client"
+            )
+        } finally {
+            setDeleting(false)
+        }
+    }
 
     return (
         <>
@@ -407,8 +437,16 @@ export default function ClientsPage() {
                                                     onClick={() => setSelectedClient(c)}
                                                     className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition"
                                                 >
-                                                    View Logs
+                                                    View Appointments
                                                     <ChevronRight size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setConfirmDelete(c)}
+                                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-400 border border-gray-200 rounded-lg hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition"
+                                                    title={`Delete ${c.name}`}
+                                                    aria-label={`Delete ${c.name}`}
+                                                >
+                                                    <Trash2 size={13} />
                                                 </button>
                                             </td>
                                         </tr>
@@ -551,7 +589,117 @@ export default function ClientsPage() {
                                 onClick={() => setSelectedClient(null)}
                                 className="px-5 py-2 text-sm font-semibold border border-gray-250 rounded-lg hover:bg-gray-50 text-gray-700 transition"
                             >
-                                Close Log
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Client Confirmation */}
+            {confirmDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={() => {
+                            if (!deleting) {
+                                setConfirmDelete(null)
+                            }
+                        }}
+                    />
+
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+
+                        {/* Warning header */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <Trash2
+                                    size={17}
+                                    className="text-red-600"
+                                />
+                            </div>
+
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900">
+                                    Remove Client
+                                </h3>
+
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-gray-100" />
+
+                        {/* Client */}
+                        <div>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Are you sure you want to permanently
+                                remove{" "}
+                                <span className="font-semibold text-gray-900">
+                        &ldquo;{confirmDelete.name}&rdquo;
+                    </span>{" "}
+                                from your salon client directory?
+                            </p>
+
+                            {(confirmDelete.email ||
+                                confirmDelete.phone) && (
+                                <div className="mt-3 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5">
+                                    {confirmDelete.email && (
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <Mail size={11} />
+                                            {confirmDelete.email}
+                                        </div>
+                                    )}
+
+                                    {confirmDelete.phone && (
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                            <Phone size={11} />
+                                            {confirmDelete.phone}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Warning */}
+                        <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
+                            <p className="text-xs text-red-700 leading-relaxed">
+                                The client profile will be permanently
+                                deleted. Existing appointment history
+                                should not be affected.
+                            </p>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-1">
+                            <button
+                                onClick={() =>
+                                    setConfirmDelete(null)
+                                }
+                                disabled={deleting}
+                                className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 transition font-semibold disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleDeleteClient}
+                                disabled={deleting}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold disabled:opacity-60"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Removing…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 size={13} />
+                                        Remove
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
