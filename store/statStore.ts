@@ -9,8 +9,86 @@ const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+export type ReportsOverview = {
+    monthlyRevenue: number
+    monthlyRevenueChangePercent: number
+    totalAppointments: number
+    appointmentsChangePercent: number
+    newClients: number
+    newClientsChange: number
+    avgTicket: number
+    avgTicketChangePercent: number
+}
+
+export type RevenueTrendPoint = {
+    label: string
+    revenue: number
+}
+
+export type RevenueByServiceItem = {
+    service: string
+    revenue: number
+}
+
+export type ServicesMixItem = {
+    category: string
+    count: number
+    percent: number
+}
+
+export type AppointmentStatusSummary = {
+    confirmed: number
+    pending: number
+}
+
+export type MonthlyBreakdownItem = {
+    month: string
+    revenue: number
+    appointments: number
+    avgTicket: number
+}
+
+export type DailyJobActivityPoint = {
+    date: string
+    jobCount: number
+}
+
+export type StaffWorkDistributionItem = {
+    staff: string
+    jobs: number
+    confirmed: number
+    pending: number
+    workloadPercent: number
+}
+
+export type DailyJobBreakdownItem = {
+    date: string
+    jobs: number
+    confirmed: number
+    pending: number
+    cancelled: number
+}
+
+export type JobStaffAnalytics = {
+    totalJobs: number
+    confirmedJobs: number
+    activeStaff: number
+    avgJobsPerStaff: number
+    dailyJobActivity: DailyJobActivityPoint[]
+    staffWorkDistribution: StaffWorkDistributionItem[]
+    dailyJobBreakdown: DailyJobBreakdownItem[]
+}
+
 export type ReportData = {
-    [key: string]: unknown
+    overview: ReportsOverview
+    monthlyRevenueTrend: RevenueTrendPoint[]
+    revenueByService: RevenueByServiceItem[]
+    weeklyRevenue: RevenueTrendPoint[]
+    weeklyRevenueChangePercent: number
+    servicesMix: ServicesMixItem[]
+    appointmentStatus: AppointmentStatusSummary
+    monthlyBreakdown: MonthlyBreakdownItem[]
+    jobStaffAnalytics: JobStaffAnalytics
 }
 
 type StatState = {
@@ -36,7 +114,6 @@ export const useStatStore =
                     set({ error: data?.message || "Failed to fetch stats", statsLoading: false })
                     return
                 }
-                console.log(data)
                 set({ stats: data?.data, statsLoading: false })
             } catch (err) {
                 set({ error: (err as Error).message, statsLoading: false })

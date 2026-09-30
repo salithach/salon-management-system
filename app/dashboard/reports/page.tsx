@@ -14,210 +14,126 @@ import {
 } from "recharts";
 import {BarChart3, CalendarDays, Users} from "lucide-react"
 import {useEffect, useMemo} from "react";
-import {useAppointmentStore} from "@/store/appointmentStore";
 import {useStatStore} from "@/store/statStore";
+import {useAuthStore} from "@/store/authStore";
 
 import LoadingOverlay from "@/components/LoadingOverlay";
 
 const COMING_SOON = false
 
-const monthlyRevenue = [
-    { month: "Nov", revenue: 4800, appointments: 68 },
-    { month: "Dec", revenue: 5200, appointments: 74 },
-    { month: "Jan", revenue: 4400, appointments: 62 },
-    { month: "Feb", revenue: 5600, appointments: 80 },
-    { month: "Mar", revenue: 5900, appointments: 84 },
-    { month: "Apr", revenue: 6100, appointments: 88 },
-    { month: "May", revenue: 6420, appointments: 92 },
-]
+const SERVICE_COLORS = ["#27272a", "#52525b", "#71717a", "#a1a1aa", "#d4d4d8"]
+const STATUS_COLORS = { confirmed: "#27272a", pending: "#d4d4d8" }
 
-const topServices = [
-    { name: "Hair Coloring", revenue: "$1,960", share: 30 },
-    { name: "Manicure", revenue: "$1,320", share: 21 },
-    { name: "Haircut & Blowout", revenue: "$1,040", share: 16 },
-    { name: "Full Highlights", revenue: "$840", share: 13 },
-    { name: "Others", revenue: "$1,260", share: 20 },
-]
 
-const weeklyRevenue = [
-    { day: "Mon", revenue: 820 },
-    { day: "Tue", revenue: 1240 },
-    { day: "Wed", revenue: 960 },
-    { day: "Thu", revenue: 1580 },
-    { day: "Fri", revenue: 2100 },
-    { day: "Sat", revenue: 2840 },
-    { day: "Sun", revenue: 580 },
-]
+const formatSignedPercent = (value: number) => {
+    const v = value ?? 0
+    return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`
+}
 
-const serviceBreakdown = [
-    { name: "Hair",   value: 48, color: "#27272a" },
-    { name: "Nails",  value: 32, color: "#52525b" },
-    { name: "Beauty", value: 20, color: "#a1a1aa" },
-]
+const formatSignedNumber = (value: number) => {
+    const v = value ?? 0
+    return `${v > 0 ? "+" : ""}${v}`
+}
 
-const appointmentStatus = [
-    { name: "Confirmed", value: 8, color: "#27272a" },
-    { name: "Pending",   value: 4, color: "#d4d4d8" },
-]
-
-const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.revenue))
+const formatDateLabel = (date: string, withYear = false) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        ...(withYear ? { year: "numeric" as const } : {}),
+    })
 
 export default function ReportsPage() {
-    const {
-        appointments,
-        appointmentsLoading,
-        fetchAppointments,
-    } = useAppointmentStore()
-
     const {
         stats,
         statsLoading,
         fetchStats,
     } = useStatStore()
 
+    const { user, _hasHydrated: authReady, fetchProfile } = useAuthStore()
+    const currency = user?.salon?.currency?.toUpperCase() || "USD"
+
+    const formatCurrency = (value: number) =>
+        `${(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} ${currency}`
+
+    const formatCurrencyCompact = (value: number) =>
+        `${(value / 1000).toFixed(1)}k ${currency}`
+
+    useEffect(() => {
+        if (authReady && !user) fetchProfile().then(() => {})
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authReady])
+
     useEffect(() => {
         fetchStats().then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const dailyJobStats = useMemo(() => {
-        const map = new Map<
-            string,
-            {
-                date: string
-                jobs: number
-                confirmed: number
-                pending: number
-                cancelled: number
-            }
-        >()
+    const overview = stats?.overview
+    const appointmentStatus = stats?.appointmentStatus
+    const jobStaffAnalytics = stats?.jobStaffAnalytics
 
-        appointments.forEach((appointment) => {
-            if (!appointment.date) return
-
-            const existing = map.get(
-                appointment.date
-            ) ?? {
-                date: appointment.date,
-                jobs: 0,
-                confirmed: 0,
-                pending: 0,
-                cancelled: 0,
-            }
-
-            if (
-                appointment.status === "CONFIRMED"
-            ) {
-                existing.confirmed++
-                existing.jobs++
-            } else if (
-                appointment.status === "PENDING"
-            ) {
-                existing.pending++
-                existing.jobs++
-            } else if (
-                appointment.status === "CANCELLED"
-            ) {
-                existing.cancelled++
-            }
-
-            map.set(
-                appointment.date,
-                existing
-            )
-        })
-
-        return Array.from(map.values()).sort(
-            (a, b) =>
-                a.date.localeCompare(b.date)
-        )
-    }, [appointments])
-
-    const staffWorkDistribution = useMemo(() => {
-        const staff = new Map<
-            string,
-            {
-                name: string
-                jobs: number
-                confirmed: number
-                pending: number
-            }
-        >()
-
-        appointments.forEach((appointment) => {
-            if (appointment.status === "CANCELLED") {
-                return
-            }
-            const name = appointment.assignee?.trim()
-            if (!name) return
-            const existing = staff.get(name) ?? {
-                name,
-                jobs: 0,
-                confirmed: 0,
-                pending: 0,
-            }
-            existing.jobs++
-            if (
-                appointment.status === "CONFIRMED"
-            ) {
-                existing.confirmed++
-            }
-            if (
-                appointment.status === "PENDING"
-            ) {
-                existing.pending++
-            }
-            staff.set(name, existing)
-        })
-
-        const totalJobs = Array.from(
-            staff.values()
-        ).reduce(
-            (total, member) =>
-                total + member.jobs,
-            0
-        )
-
-        return Array.from(staff.values())
-            .map((member) => ({
-                ...member,
-
-                workload:
-                    totalJobs > 0
-                        ? (member.jobs /
-                            totalJobs) *
-                        100
-                        : 0,
-            }))
-            .sort(
-                (a, b) =>
-                    b.jobs - a.jobs
-            )
-    }, [appointments])
-
-    const maxStaffJobs = Math.max(
-        ...staffWorkDistribution.map(
-            (member) => member.jobs
-        ),
-        1
+    const monthlyBreakdown = useMemo(
+        () => stats?.monthlyBreakdown ?? [],
+        [stats?.monthlyBreakdown]
+    )
+    const revenueByService = useMemo(
+        () => stats?.revenueByService ?? [],
+        [stats?.revenueByService]
+    )
+    const weeklyRevenue = useMemo(
+        () => stats?.weeklyRevenue ?? [],
+        [stats?.weeklyRevenue]
+    )
+    const servicesMix = useMemo(
+        () => stats?.servicesMix ?? [],
+        [stats?.servicesMix]
+    )
+    const dailyJobActivity = useMemo(
+        () => jobStaffAnalytics?.dailyJobActivity ?? [],
+        [jobStaffAnalytics?.dailyJobActivity]
+    )
+    const staffWorkDistribution = useMemo(
+        () => jobStaffAnalytics?.staffWorkDistribution ?? [],
+        [jobStaffAnalytics?.staffWorkDistribution]
+    )
+    const dailyJobBreakdown = useMemo(
+        () => jobStaffAnalytics?.dailyJobBreakdown ?? [],
+        [jobStaffAnalytics?.dailyJobBreakdown]
     )
 
-    const totalJobs = dailyJobStats.reduce(
-        (total, day) =>
-            total + day.jobs,
-        0
+    const maxMonthlyRevenue = useMemo(
+        () => Math.max(...monthlyBreakdown.map((m) => m.revenue), 1),
+        [monthlyBreakdown]
     )
 
-    const totalConfirmed =
-        dailyJobStats.reduce(
-            (total, day) =>
-                total + day.confirmed,
-            0
-        )
+    const totalServiceRevenue = useMemo(
+        () => revenueByService.reduce((total, s) => total + s.revenue, 0),
+        [revenueByService]
+    )
 
-    const activeStaff = staffWorkDistribution.length
+    const servicesMixData = useMemo(
+        () =>
+            servicesMix.map((s, i) => ({
+                name: s.category,
+                value: s.percent,
+                count: s.count,
+                color: SERVICE_COLORS[i % SERVICE_COLORS.length],
+            })),
+        [servicesMix]
+    )
 
-    const avgJobsPerStaff = activeStaff > 0 ? totalJobs / activeStaff : 0
+    const appointmentStatusData = useMemo(() => {
+        if (!appointmentStatus) return []
+        return [
+            { name: "Confirmed", value: appointmentStatus.confirmed, color: STATUS_COLORS.confirmed },
+            { name: "Pending", value: appointmentStatus.pending, color: STATUS_COLORS.pending },
+        ]
+    }, [appointmentStatus])
+
+    const maxStaffJobs = useMemo(
+        () => Math.max(...staffWorkDistribution.map((m) => m.jobs), 1),
+        [staffWorkDistribution]
+    )
 
     if (COMING_SOON) return (
         <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
@@ -236,19 +152,51 @@ export default function ReportsPage() {
         </div>
     )
 
+    if (!statsLoading && !stats) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                    <BarChart3 size={28} className="text-zinc-400" />
+                </div>
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-900">No report data available</h2>
+                    <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                        We couldn&apos;t find any analytics for this salon yet.
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <>
-            {appointmentsLoading && (
+            {statsLoading && (
                 <LoadingOverlay message="Preparing reports…" />
             )}
             <>
                         {/* KPI cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                             {[
-                                { label: "Monthly Revenue", value: "$6,420", change: "+12% vs last month" },
-                                { label: "Total Appointments", value: "92", change: "+5% vs last month" },
-                                { label: "New Clients", value: "24", change: "+8 vs last month" },
-                                { label: "Avg. Ticket", value: "$69.8", change: "+6% vs last month" },
+                                {
+                                    label: "Monthly Revenue",
+                                    value: formatCurrency(overview?.monthlyRevenue ?? 0),
+                                    change: `${formatSignedPercent(overview?.monthlyRevenueChangePercent ?? 0)} vs last month`,
+                                },
+                                {
+                                    label: "Total Appointments",
+                                    value: String(overview?.totalAppointments ?? 0),
+                                    change: `${formatSignedPercent(overview?.appointmentsChangePercent ?? 0)} vs last month`,
+                                },
+                                {
+                                    label: "New Clients",
+                                    value: String(overview?.newClients ?? 0),
+                                    change: `${formatSignedNumber(overview?.newClientsChange ?? 0)} vs last month`,
+                                },
+                                {
+                                    label: "Avg. Ticket",
+                                    value: formatCurrency(overview?.avgTicket ?? 0),
+                                    change: `${formatSignedPercent(overview?.avgTicketChangePercent ?? 0)} vs last month`,
+                                },
                             ].map((s) => (
                                 <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                                     <p className="text-xs text-gray-500 mb-1">{s.label}</p>
@@ -262,42 +210,59 @@ export default function ReportsPage() {
                             {/* Bar chart */}
                             <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
                                 <h2 className="text-sm font-semibold text-gray-900 mb-6">Monthly Revenue</h2>
-                                <div className="flex items-end gap-3 h-40">
-                                    {monthlyRevenue.map((m) => {
-                                        const height = Math.round((m.revenue / maxRevenue) * 100)
-                                        return (
-                                            <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
-                                                <span className="text-xs text-gray-500">${(m.revenue / 1000).toFixed(1)}k</span>
-                                                <div
-                                                    className="w-full rounded-t-md bg-black transition-all"
-                                                    style={{ height: `${height}%` }}
-                                                />
-                                                <span className="text-xs text-gray-400">{m.month}</span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                                {monthlyBreakdown.length === 0 ? (
+                                    <div className="h-40 flex items-center justify-center">
+                                        <p className="text-xs text-gray-400">No revenue data available.</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-end gap-3 h-40">
+                                        {monthlyBreakdown.map((m) => {
+                                            const height = Math.round((m.revenue / maxMonthlyRevenue) * 100)
+                                            return (
+                                                <div key={m.month} className="flex-1 flex flex-col items-center gap-2 h-full">
+                                                    <span className="text-xs text-gray-500">{formatCurrencyCompact(m.revenue)}</span>
+                                                    <div className="w-full flex-1 flex items-end">
+                                                        <div
+                                                            className="w-full rounded-t-md bg-black transition-all"
+                                                            style={{ height: `${Math.max(height, m.revenue > 0 ? 2 : 0)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs text-gray-400">{m.month}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Top services */}
                             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
                                 <h2 className="text-sm font-semibold text-gray-900 mb-6">Revenue by Service</h2>
-                                <div className="space-y-4">
-                                    {topServices.map((svc) => (
-                                        <div key={svc.name}>
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs text-gray-700">{svc.name}</span>
-                                                <span className="text-xs font-medium text-gray-900">{svc.revenue}</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-black rounded-full"
-                                                    style={{ width: `${svc.share}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                {revenueByService.length === 0 ? (
+                                    <p className="text-xs text-gray-400">No service revenue data available.</p>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {revenueByService.map((svc) => {
+                                            const share = totalServiceRevenue > 0
+                                                ? (svc.revenue / totalServiceRevenue) * 100
+                                                : 0
+                                            return (
+                                                <div key={svc.service}>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-xs text-gray-700">{svc.service}</span>
+                                                        <span className="text-xs font-medium text-gray-900">{formatCurrency(svc.revenue)}</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-black rounded-full"
+                                                            style={{ width: `${share}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -311,7 +276,13 @@ export default function ReportsPage() {
                                         <h3 className="text-sm font-semibold text-gray-900">Weekly Revenue</h3>
                                         <p className="text-xs text-gray-400 mt-0.5">This week&apos;s daily earnings</p>
                                     </div>
-                                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">+12% vs last week</span>
+                                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                                        (stats?.weeklyRevenueChangePercent ?? 0) >= 0
+                                            ? "text-green-600 bg-green-50"
+                                            : "text-red-600 bg-red-50"
+                                    }`}>
+                                        {formatSignedPercent(stats?.weeklyRevenueChangePercent ?? 0)} vs last week
+                                    </span>
                                 </div>
                                 <ResponsiveContainer width="100%" height={180}>
                                     <AreaChart data={weeklyRevenue}>
@@ -322,12 +293,12 @@ export default function ReportsPage() {
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                                        <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+                                        <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40}
-                                               tickFormatter={(v) => `$${v}`} />
+                                               tickFormatter={(v) => `${v}`} />
                                         <Tooltip
                                             contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
-                                            formatter={(v) => [`$${Number(v).toLocaleString()}`, "Revenue"]}
+                                            formatter={(v) => [`${Number(v).toLocaleString()} ${currency}`, "Revenue"]}
                                         />
                                         <Area type="monotone" dataKey="revenue" stroke="#27272a" strokeWidth={2}
                                               fill="url(#revenueGrad)" dot={{ fill: "#27272a", r: 3 }} activeDot={{ r: 5 }} />
@@ -337,59 +308,67 @@ export default function ReportsPage() {
 
                             {/* Right column: 2 small donuts */}
                             <div className="flex flex-col gap-4">
-                                {/* Service category donut (static) */}
+                                {/* Service category donut */}
                                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
                                     <h3 className="text-sm font-semibold text-gray-900 mb-1">Services Mix</h3>
                                     <p className="text-xs text-gray-400 mb-3">Appointments by category</p>
-                                    <div className="flex items-center gap-4">
-                                        <ResponsiveContainer width={100} height={100}>
-                                            <PieChart>
-                                                <Pie data={serviceBreakdown} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
-                                                     dataKey="value" strokeWidth={2}>
-                                                    {serviceBreakdown.map((entry) => (
-                                                        <Cell key={entry.name} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                                                         formatter={(v) => [`${v}%`, ""]} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        <div className="flex flex-col gap-1.5">
-                                            {serviceBreakdown.map((s) => (
-                                                <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
-                                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                                                    {s.name} <span className="ml-auto text-gray-400 font-medium">{s.value}%</span>
-                                                </div>
-                                            ))}
+                                    {servicesMixData.length === 0 ? (
+                                        <p className="text-xs text-gray-400">No category data available.</p>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <ResponsiveContainer width={100} height={100}>
+                                                <PieChart>
+                                                    <Pie data={servicesMixData} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
+                                                         dataKey="value" strokeWidth={2}>
+                                                        {servicesMixData.map((entry) => (
+                                                            <Cell key={entry.name} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                                                             formatter={(v) => [`${v}%`, ""]} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <div className="flex flex-col gap-1.5">
+                                                {servicesMixData.map((s) => (
+                                                    <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                                                        {s.name} <span className="ml-auto text-gray-400 font-medium">{s.value}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Appointment status donut */}
                                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
                                     <h3 className="text-sm font-semibold text-gray-900 mb-1">Appointment Status</h3>
                                     <p className="text-xs text-gray-400 mb-3">Today&apos;s confirmation rate</p>
-                                    <div className="flex items-center gap-4">
-                                        <ResponsiveContainer width={100} height={100}>
-                                            <PieChart>
-                                                <Pie data={appointmentStatus} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
-                                                     dataKey="value" strokeWidth={2}>
-                                                    {appointmentStatus.map((entry) => (
-                                                        <Cell key={entry.name} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                        <div className="flex flex-col gap-1.5">
-                                            {appointmentStatus.map((s) => (
-                                                <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
-                                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                                                    {s.name} <span className="ml-auto font-medium text-gray-800">{s.value}</span>
-                                                </div>
-                                            ))}
+                                    {appointmentStatusData.length === 0 ? (
+                                        <p className="text-xs text-gray-400">No appointment status data available.</p>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <ResponsiveContainer width={100} height={100}>
+                                                <PieChart>
+                                                    <Pie data={appointmentStatusData} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
+                                                         dataKey="value" strokeWidth={2}>
+                                                        {appointmentStatusData.map((entry) => (
+                                                            <Cell key={entry.name} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <div className="flex flex-col gap-1.5">
+                                                {appointmentStatusData.map((s) => (
+                                                    <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
+                                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                                                        {s.name} <span className="ml-auto font-medium text-gray-800">{s.value}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -399,28 +378,35 @@ export default function ReportsPage() {
                             <div className="px-6 py-4 border-b border-gray-100">
                                 <h2 className="text-sm font-semibold text-gray-900">Monthly Breakdown</h2>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                    <tr className="bg-gray-50 text-left">
-                                        {["Month", "Revenue", "Appointments", "Avg. Ticket"].map((h) => (
-                                            <th key={h} className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
-                                        ))}
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50">
-                                    {[...monthlyRevenue].reverse().map((m) => (
-                                        <tr key={m.month} className="hover:bg-gray-50 transition">
-                                            <td className="px-6 py-4 font-medium text-gray-700">{m.month}</td>
-                                            <td className="px-6 py-4 text-gray-900">${m.revenue.toLocaleString()}</td>
-                                            <td className="px-6 py-4 text-gray-600">{m.appointments}</td>
-                                            <td className="px-6 py-4 text-gray-600">${(m.revenue / m.appointments).toFixed(0)}</td>
+                            {monthlyBreakdown.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <p className="text-xs text-gray-400">No monthly data available.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                        <tr className="bg-gray-50 text-left">
+                                            {["Month", "Revenue", "Appointments", "Avg. Ticket"].map((h) => (
+                                                <th key={h} className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                                            ))}
                                         </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                        {[...monthlyBreakdown].reverse().map((m) => (
+                                            <tr key={m.month} className="hover:bg-gray-50 transition">
+                                                <td className="px-6 py-4 font-medium text-gray-700">{m.month}</td>
+                                                <td className="px-6 py-4 text-gray-900">{formatCurrency(m.revenue)}</td>
+                                                <td className="px-6 py-4 text-gray-600">{m.appointments}</td>
+                                                <td className="px-6 py-4 text-gray-600">{formatCurrency(m.avgTicket)}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
+
 
                         <div className="pt-2">
                             <div>
@@ -445,7 +431,7 @@ export default function ReportsPage() {
                                         </p>
 
                                         <p className="text-3xl font-bold text-gray-900 mt-1">
-                                            {totalJobs}
+                                            {jobStaffAnalytics?.totalJobs ?? 0}
                                         </p>
                                     </div>
 
@@ -470,7 +456,7 @@ export default function ReportsPage() {
                                         </p>
 
                                         <p className="text-3xl font-bold text-gray-900 mt-1">
-                                            {totalConfirmed}
+                                            {jobStaffAnalytics?.confirmedJobs ?? 0}
                                         </p>
                                     </div>
 
@@ -495,7 +481,7 @@ export default function ReportsPage() {
                                         </p>
 
                                         <p className="text-3xl font-bold text-gray-900 mt-1">
-                                            {activeStaff}
+                                            {jobStaffAnalytics?.activeStaff ?? 0}
                                         </p>
                                     </div>
 
@@ -519,7 +505,7 @@ export default function ReportsPage() {
                                     </p>
 
                                     <p className="text-3xl font-bold text-gray-900 mt-1">
-                                        {avgJobsPerStaff.toFixed(1)}
+                                        {(jobStaffAnalytics?.avgJobsPerStaff ?? 0).toFixed(1)}
                                     </p>
                                 </div>
 
@@ -548,7 +534,7 @@ export default function ReportsPage() {
                                 />
                             </div>
 
-                            {dailyJobStats.length === 0 ? (
+                            {dailyJobActivity.length === 0 ? (
                                 <div className="h-52 flex items-center justify-center">
                                     <p className="text-xs text-gray-400">
                                         No appointment activity available.
@@ -560,7 +546,7 @@ export default function ReportsPage() {
                                     height={220}
                                 >
                                     <AreaChart
-                                        data={dailyJobStats}
+                                        data={dailyJobActivity}
                                     >
                                         <defs>
                                             <linearGradient
@@ -645,7 +631,7 @@ export default function ReportsPage() {
 
                                         <Area
                                             type="monotone"
-                                            dataKey="jobs"
+                                            dataKey="jobCount"
                                             name="Jobs"
                                             stroke="#27272a"
                                             strokeWidth={2}
@@ -720,7 +706,7 @@ export default function ReportsPage() {
                                         {staffWorkDistribution.map(
                                             (member) => {
                                                 const initials =
-                                                    member.name
+                                                    member.staff
                                                         .split(" ")
                                                         .map(
                                                             (part) =>
@@ -733,7 +719,7 @@ export default function ReportsPage() {
                                                 return (
                                                     <tr
                                                         key={
-                                                            member.name
+                                                            member.staff
                                                         }
                                                         className="hover:bg-gray-50/50 transition"
                                                     >
@@ -746,7 +732,7 @@ export default function ReportsPage() {
 
                                                                 <span className="font-semibold text-gray-900">
                                                 {
-                                                    member.name
+                                                    member.staff
                                                 }
                                             </span>
                                                             </div>
@@ -787,7 +773,7 @@ export default function ReportsPage() {
                                                                 </div>
 
                                                                 <span className="w-12 text-right text-xs font-semibold text-gray-700">
-                                                {member.workload.toFixed(
+                                                {member.workloadPercent.toFixed(
                                                     1
                                                 )}
                                                                     %
@@ -817,7 +803,7 @@ export default function ReportsPage() {
                                 </p>
                             </div>
 
-                            {dailyJobStats.length === 0 ? (
+                            {dailyJobBreakdown.length === 0 ? (
                                 <div className="py-12 text-center">
                                     <p className="text-xs text-gray-400">
                                         No daily job data available.
@@ -846,7 +832,7 @@ export default function ReportsPage() {
                                         </thead>
 
                                         <tbody className="divide-y divide-gray-100">
-                                        {[...dailyJobStats]
+                                        {[...dailyJobBreakdown]
                                             .reverse()
                                             .map((day) => (
                                                 <tr
@@ -854,16 +840,7 @@ export default function ReportsPage() {
                                                     className="hover:bg-gray-50/50 transition"
                                                 >
                                                     <td className="px-6 py-4 font-semibold text-gray-900">
-                                                        {new Date(
-                                                            `${day.date}T00:00:00`
-                                                        ).toLocaleDateString(
-                                                            "en-US",
-                                                            {
-                                                                month: "short",
-                                                                day: "numeric",
-                                                                year: "numeric",
-                                                            }
-                                                        )}
+                                                        {formatDateLabel(day.date, true)}
                                                     </td>
 
                                                     <td className="px-6 py-4 font-bold text-gray-900">
