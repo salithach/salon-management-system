@@ -12,10 +12,12 @@ import {
     XAxis,
     YAxis
 } from "recharts";
-import {BarChart3, CalendarDays, Users} from "lucide-react"
-import {useEffect, useMemo} from "react";
+import {BarChart3, CalendarDays, Download, Users} from "lucide-react"
+import {useEffect, useMemo, useRef, useState} from "react";
 import {useStatStore} from "@/store/statStore";
 import {useAuthStore} from "@/store/authStore";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas-pro";
 
 import LoadingOverlay from "@/components/LoadingOverlay";
 
@@ -67,6 +69,50 @@ export default function ReportsPage() {
         fetchStats().then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    const reportRef = useRef<HTMLDivElement>(null)
+    const [exporting, setExporting] = useState(false)
+
+    const handleExportPdf = async () => {
+        if (!reportRef.current || exporting) return
+        setExporting(true)
+        try {
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 1.5,
+                backgroundColor: "#f9fafb",
+                useCORS: true,
+            })
+            // JPEG compresses dramatically better than PNG for this kind of
+            // content (gradients/anti-aliased text), keeping file size small.
+            const imgData = canvas.toDataURL("image/jpeg", 0.85)
+
+            const pdf = new jsPDF({ orientation: "p", unit: "pt", format: "a4", compress: true })
+            const pageWidth = pdf.internal.pageSize.getWidth()
+            const pageHeight = pdf.internal.pageSize.getHeight()
+            const imgWidth = pageWidth
+            const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+            let heightLeft = imgHeight
+            let position = 0
+
+            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
+            heightLeft -= pageHeight
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight
+                pdf.addPage()
+                pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
+                heightLeft -= pageHeight
+            }
+
+            const dateStr = new Date().toISOString().slice(0, 10)
+            pdf.save(`salon-report-${dateStr}.pdf`)
+        } catch (err) {
+            console.error("Failed to export report as PDF", err)
+        } finally {
+            setExporting(false)
+        }
+    }
 
     const overview = stats?.overview
     const appointmentStatus = stats?.appointmentStatus
@@ -173,7 +219,26 @@ export default function ReportsPage() {
             {statsLoading && (
                 <LoadingOverlay message="Preparing reports…" />
             )}
-            <>
+
+            <div className="flex items-center justify-between mb-2">
+                <div>
+                    <h1 className="text-lg font-semibold text-gray-900">Reports</h1>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                        Revenue, appointment and staff performance insights
+                    </p>
+                </div>
+
+                <button
+                    onClick={handleExportPdf}
+                    disabled={exporting || statsLoading || !stats}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                    <Download size={16} />
+                    {exporting ? "Exporting…" : "Export PDF"}
+                </button>
+            </div>
+
+            <div ref={reportRef} className="space-y-6 bg-gray-50 p-1">
                         {/* KPI cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                             {[
@@ -865,7 +930,7 @@ export default function ReportsPage() {
                                 </div>
                             )}
                         </div>
-                    </>
+                    </div>
         </>
     )
 }
