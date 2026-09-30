@@ -12,12 +12,14 @@ const authHeaders = (): Record<string, string> => {
 export type ReportsOverview = {
     monthlyRevenue: number
     monthlyRevenueChangePercent: number
+    monthlyJobs: number
+    monthlyJobsChangePercent: number
     totalAppointments: number
     appointmentsChangePercent: number
     newClients: number
     newClientsChange: number
-    avgTicket: number
-    avgTicketChangePercent: number
+    avgJobRevenue: number
+    avgJobRevenueChangePercent: number
 }
 
 export type RevenueTrendPoint = {
@@ -44,8 +46,9 @@ export type AppointmentStatusSummary = {
 export type MonthlyBreakdownItem = {
     month: string
     revenue: number
+    jobs: number
     appointments: number
-    avgTicket: number
+    avgJobRevenue: number
 }
 
 export type DailyJobActivityPoint = {

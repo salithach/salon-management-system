@@ -102,7 +102,7 @@ function BookingModal({ initial, editId, onClose }: { initial: BookingForm; edit
                 toast.success(`${form.clientName}'s appointment on ${form.date} is updated`)
             } else {
                 await addAppointment(payload)
-                toast.success("Booking created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
+                toast.success("Appointment created!", { description: `${form.clientName} — ${formatTime(form.time)}` })
             }
             onClose()
         } catch (err) {

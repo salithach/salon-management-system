@@ -32,10 +32,6 @@ const formatSignedPercent = (value: number) => {
     return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`
 }
 
-const formatSignedNumber = (value: number) => {
-    const v = value ?? 0
-    return `${v > 0 ? "+" : ""}${v}`
-}
 
 const formatDateLabel = (date: string, withYear = false) =>
     new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
@@ -105,7 +101,7 @@ export default function ReportsPage() {
                 heightLeft -= pageHeight
             }
 
-            const dateStr = new Date().toISOString().slice(0, 10)
+            const dateStr = new Date().toLocaleDateString('en-CA');
             pdf.save(`salon-report-${dateStr}.pdf`)
         } catch (err) {
             console.error("Failed to export report as PDF", err)
@@ -146,6 +142,7 @@ export default function ReportsPage() {
         () => jobStaffAnalytics?.dailyJobBreakdown ?? [],
         [jobStaffAnalytics?.dailyJobBreakdown]
     )
+
 
     const maxMonthlyRevenue = useMemo(
         () => Math.max(...monthlyBreakdown.map((m) => m.revenue), 1),
@@ -222,7 +219,7 @@ export default function ReportsPage() {
 
             <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h1 className="text-lg font-semibold text-gray-900">Reports</h1>
+                    <h1 className="text-lg font-semibold text-gray-900">Analyse Your Salon</h1>
                     <p className="text-xs text-gray-400 mt-0.5">
                         Revenue, appointment and staff performance insights
                     </p>
@@ -243,9 +240,14 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     {[
                         {
-                            label: "Monthly Revenue",
+                            label: "Total Revenue",
                             value: formatCurrency(overview?.monthlyRevenue ?? 0),
                             change: `${formatSignedPercent(overview?.monthlyRevenueChangePercent ?? 0)} vs last month`,
+                        },
+                        {
+                            label: "Total Jobs",
+                            value: String(overview?.monthlyJobs ?? 0),
+                            change: `${formatSignedPercent(overview?.monthlyJobsChangePercent ?? 0)} vs last month`,
                         },
                         {
                             label: "Total Appointments",
@@ -253,14 +255,9 @@ export default function ReportsPage() {
                             change: `${formatSignedPercent(overview?.appointmentsChangePercent ?? 0)} vs last month`,
                         },
                         {
-                            label: "New Clients",
-                            value: String(overview?.newClients ?? 0),
-                            change: `${formatSignedNumber(overview?.newClientsChange ?? 0)} vs last month`,
-                        },
-                        {
-                            label: "Avg. Ticket",
-                            value: formatCurrency(overview?.avgTicket ?? 0),
-                            change: `${formatSignedPercent(overview?.avgTicketChangePercent ?? 0)} vs last month`,
+                            label: "Active Staff",
+                            value: String(jobStaffAnalytics?.activeStaff ?? 0),
+                            change: "active staff members for today",
                         },
                     ].map((s) => (
                         <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -375,7 +372,7 @@ export default function ReportsPage() {
                     <div className="flex flex-col gap-4">
                         {/* Service category donut */}
                         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">Services Mix</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-1">Appointments Services Mix</h3>
                             <p className="text-xs text-gray-400 mb-3">Appointments by category</p>
                             {servicesMixData.length === 0 ? (
                                 <p className="text-xs text-gray-400">No category data available.</p>
@@ -441,7 +438,7 @@ export default function ReportsPage() {
                 {/* Monthly breakdown table */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100">
-                        <h2 className="text-sm font-semibold text-gray-900">Monthly Breakdown</h2>
+                        <h2 className="text-sm font-semibold text-gray-900">Monthly Income Breakdown</h2>
                     </div>
                     {monthlyBreakdown.length === 0 ? (
                         <div className="py-12 text-center">
@@ -452,7 +449,7 @@ export default function ReportsPage() {
                             <table className="w-full text-sm">
                                 <thead>
                                 <tr className="bg-gray-50 text-left">
-                                    {["Month", "Revenue", "Appointments", "Avg. Ticket"].map((h) => (
+                                    {["Month", "Revenue", "Jobs", "Appointments", "Avg. Job Revenue"].map((h) => (
                                         <th key={h} className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
                                     ))}
                                 </tr>
@@ -462,122 +459,15 @@ export default function ReportsPage() {
                                     <tr key={m.month} className="hover:bg-gray-50 transition">
                                         <td className="px-6 py-4 font-medium text-gray-700">{m.month}</td>
                                         <td className="px-6 py-4 text-gray-900">{formatCurrency(m.revenue)}</td>
+                                        <td className="px-6 py-4 text-gray-600">{m.jobs}</td>
                                         <td className="px-6 py-4 text-gray-600">{m.appointments}</td>
-                                        <td className="px-6 py-4 text-gray-600">{formatCurrency(m.avgTicket)}</td>
+                                        <td className="px-6 py-4 text-gray-600">{formatCurrency(m.avgJobRevenue)}</td>
                                     </tr>
                                 ))}
                                 </tbody>
                             </table>
                         </div>
                     )}
-                </div>
-
-
-                <div className="pt-2">
-                    <div>
-                        <h2 className="text-base font-bold text-gray-900">
-                            Job & Staff Analytics
-                        </h2>
-
-                        <p className="text-xs text-gray-400 mt-1">
-                            Daily workload and staff job distribution
-                            based on appointment activity.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Job KPI cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-xs text-gray-500">
-                                    Total Jobs
-                                </p>
-
-                                <p className="text-3xl font-bold text-gray-900 mt-1">
-                                    {jobStaffAnalytics?.totalJobs ?? 0}
-                                </p>
-                            </div>
-
-                            <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center">
-                                <CalendarDays
-                                    size={18}
-                                    className="text-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-3">
-                            Non-cancelled appointments
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-xs text-gray-500">
-                                    Confirmed Jobs
-                                </p>
-
-                                <p className="text-3xl font-bold text-gray-900 mt-1">
-                                    {jobStaffAnalytics?.confirmedJobs ?? 0}
-                                </p>
-                            </div>
-
-                            <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center">
-                                <BarChart3
-                                    size={18}
-                                    className="text-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-3">
-                            Confirmed appointments
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <p className="text-xs text-gray-500">
-                                    Active Staff
-                                </p>
-
-                                <p className="text-3xl font-bold text-gray-900 mt-1">
-                                    {jobStaffAnalytics?.activeStaff ?? 0}
-                                </p>
-                            </div>
-
-                            <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center">
-                                <Users
-                                    size={18}
-                                    className="text-zinc-700"
-                                />
-                            </div>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-3">
-                            Staff with assigned jobs
-                        </p>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                        <div>
-                            <p className="text-xs text-gray-500">
-                                Avg. Jobs / Staff
-                            </p>
-
-                            <p className="text-3xl font-bold text-gray-900 mt-1">
-                                {(jobStaffAnalytics?.avgJobsPerStaff ?? 0).toFixed(1)}
-                            </p>
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 mt-3">
-                            Average workload per staff member
-                        </p>
-                    </div>
                 </div>
 
                 {/* Daily jobs chart */}
@@ -719,7 +609,7 @@ export default function ReportsPage() {
                     <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <div>
                             <h3 className="text-sm font-semibold text-gray-900">
-                                Staff Work Distribution
+                                Staff Appointment Distribution
                             </h3>
 
                             <p className="text-xs text-gray-400 mt-1">
@@ -855,11 +745,11 @@ export default function ReportsPage() {
                     )}
                 </div>
 
-                {/* Daily Job Breakdown */}
+                {/* Daily Appointment Breakdown */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-100">
                                 <h3 className="text-sm font-semibold text-gray-900">
-                                    Daily Job Breakdown
+                                    Daily Appointment Breakdown
                                 </h3>
 
                                 <p className="text-xs text-gray-400 mt-1">
