@@ -27,7 +27,18 @@ export default function DashboardPage() {
         }))
     )
     const { fetchAppointments, appointments } = useAppointmentStore()
-    const clientsToday = appointments.map((a) => a.client.id).filter(Boolean)
+    // Unique clients. The API can return the same person with/without an id or phone,
+    // so match on the most consistent identifier first: email → phone → id → name.
+    const clientsToday = Array.from(new Set(
+        appointments
+            .map((a) =>
+                a.client.email?.trim().toLowerCase() ||
+                a.client.phone?.trim() ||
+                a.client.id ||
+                a.client.name?.trim().toLowerCase()
+            )
+            .filter(Boolean)
+    ))
     const assignedStaff = assignedToday ?? []
 
     const { _hasHydrated: authReady, fetchProfile, user } = useAuthStore()
