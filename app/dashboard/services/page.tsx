@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Tag, Plus, X, Trash2, Layers } from "lucide-react"
 import { toast } from "sonner"
 import { useMetadataStore, JobType } from "@/store/metadataStore"
-import DropDown from "@/components/DropDown"
 
 const emptyForm = { key: "", value: "", category: "" }
 
@@ -23,13 +22,6 @@ export default function ServicesPage() {
         "All",
         ...Array.from(new Set(jobTypes.map((t) => t.category ?? "Uncategorized"))).sort(),
     ]
-
-    // DropDown options — { label: category string, value: category string }
-    const categoryOptions = Array.from(
-        new Set(jobTypes.map((t) => t.category).filter((c): c is string => !!c))
-    )
-        .sort()
-        .map((cat) => ({ label: cat, value: cat }))
 
     const filtered = activeCategory === "All"
         ? jobTypes
@@ -147,9 +139,9 @@ export default function ServicesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filtered.map((svc) => (
+                    {filtered.map((svc, index) => (
                         <div
-                            key={svc.key}
+                            key={svc.key[index] + "-" + index}
                             className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-gray-300 hover:shadow-md transition"
                         >
                             <div className="flex items-start justify-between mb-3">
@@ -211,7 +203,11 @@ export default function ServicesPage() {
                                 <input
                                     type="text"
                                     value={form.value}
-                                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                                    onChange={(e) => {
+                                        const name = e.target.value
+                                        const autoKey = name.trim().toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "")
+                                        setForm({ ...form, value: name, key: autoKey })
+                                    }}
                                     placeholder="e.g. Hair Cut"
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white"
                                 />
@@ -225,11 +221,11 @@ export default function ServicesPage() {
                                 <input
                                     type="text"
                                     value={form.key}
-                                    onChange={(e) => setForm({ ...form, key: e.target.value.toLowerCase().replace(/\s+/g, "_") })}
+                                    onChange={(e) => setForm({ ...form, key: e.target.value.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "") })}
                                     placeholder="e.g. HAIR_CUT"
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white font-mono"
                                 />
-                                <p className="text-[10px] text-gray-400 mt-1">Lowercase, underscores only. Auto-formatted as you type.</p>
+                                <p className="text-[10px] text-gray-400 mt-1">Uppercase, underscores only. Auto-populated from service name.</p>
                             </div>
 
                             {/* category */}
@@ -237,18 +233,13 @@ export default function ServicesPage() {
                                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
                                     Service Category <span className="text-red-400">*</span>
                                 </label>
-                                <DropDown
-                                    options={categoryOptions}
+                                <input
+                                    type="category"
                                     value={form.category}
-                                    onChange={(v) => setForm({ ...form, category: v })}
-                                    placeholder="Select a category…"
-                                    disabled={categoryOptions.length === 0}
+                                    onChange={(e) => setForm({ ...form, category: e.target.value.toUpperCase() })}
+                                    placeholder="e.g. HAIR"
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800 text-gray-900 placeholder:text-gray-400 bg-white font-mono"
                                 />
-                                {categoryOptions.length === 0 && (
-                                    <p className="text-[10px] text-gray-400 mt-1">
-                                        No categories yet — add your first service to create one.
-                                    </p>
-                                )}
                             </div>
                         </div>
 

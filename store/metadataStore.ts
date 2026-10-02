@@ -1,7 +1,9 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { apiFetch } from "@/lib/apiFetch"
-import { useAuthStore } from "@/store/authStore"
+import {AuthUser, useAuthStore} from "@/store/authStore"
+import {isAdmin} from "@/lib/auth";
+import {CONTENT_TYPES, REQUEST_HEADERS} from "@/lib/constants";
 
 export type JobType = {
     key: string
@@ -14,14 +16,20 @@ export type JobRole = {
     value: string
 }
 
+export type Options = {
+    force: boolean
+    tenantId: string | undefined
+    user: AuthUser | null
+}
+
 type MetadataState = {
     jobTypes: JobType[]
     jobRoles: JobRole[]
     metadataLoading: boolean
     error: string | null
     hasFetched: boolean
-    fetchMetadata: (options?: { force?: boolean }) => Promise<void>
-    addJobType: (entry: JobType) => Promise<void>
+    fetchMetadata: (options?: Options) => Promise<void>
+    addJobType: (entry: JobType, options?: Options) => Promise<void>
     clearMetadata: () => void
 }
 
@@ -56,7 +64,16 @@ export const useMetadataStore = create<MetadataState>()(
 
                 set({ metadataLoading: true, error: null })
                 try {
-                    const res = await apiFetch("/api/metadata", { headers: authHeaders() })
+                    let headers = authHeaders();
+                    const tenantId = options && options.tenantId ? options.tenantId : ""
+                    if (isAdmin(options?.user)) {
+                        headers = {
+                            ...headers,
+                            [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+                            ...(tenantId ? { [REQUEST_HEADERS.TENANT_ID]: tenantId } : {}),
+                        }
+                    }
+                    const res = await apiFetch("/api/metadata", { headers })
                     const data = await res.json()
 
                     if (!res.ok) {
@@ -77,11 +94,19 @@ export const useMetadataStore = create<MetadataState>()(
                 }
             },
 
-            addJobType: async (entry: JobType) => {
-                // POST to backend first — only update local state/localStorage on success
-                const res = await apiFetch("/api/jobTypes", {
+            addJobType: async (entry: JobType, options) => {
+                let headers = authHeaders();
+                const tenantId = options && options.tenantId ? options.tenantId : ""
+                if (isAdmin(options && options?.user)) {
+                    headers = {
+                        ...headers,
+                        [REQUEST_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+                        ...(tenantId ? { [REQUEST_HEADERS.TENANT_ID]: tenantId } : {}),
+                    }
+                }
+                const res = await apiFetch("/api/metadata/jobs/types", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", ...authHeaders() },
+                    headers,
                     body: JSON.stringify([entry]),
                 })
 

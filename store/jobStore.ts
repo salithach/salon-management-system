@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { apiFetch } from "@/lib/apiFetch"
+import { apiFetch, getLocalDateString } from "@/lib/apiFetch"
 import { useAuthStore } from "@/store/authStore"
 import { StaffMember } from "@/store/staffStore"
 
@@ -38,7 +38,7 @@ export const useJobStore = create<JobState>()((set, get) => ({
         if (get().jobsLoading) return
         set({ jobsLoading: true, error: null })
         try {
-            const d = date ?? new Date().toISOString().slice(0, 10)
+            const d = date ?? getLocalDateString()
             const res = await apiFetch(`/api/jobs?date=${d}`, { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) {
@@ -52,7 +52,7 @@ export const useJobStore = create<JobState>()((set, get) => ({
     },
 
     addJob: async (member, services, price, description) => {
-        const date = new Date().toISOString().slice(0, 10)
+        const date = getLocalDateString()
         const res = await apiFetch("/api/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },

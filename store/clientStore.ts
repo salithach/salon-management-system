@@ -1,0 +1,109 @@
+import { create } from "zustand"
+import { apiFetch } from "@/lib/apiFetch"
+import { wait } from "@/lib/wait"
+import { useAuthStore } from "@/store/authStore"
+
+export type ClientInfo = {
+    id: string
+    name: string
+    phone?: string
+    email?: string
+    tenantId?: string
+}
+
+const authHeaders = (): Record<string, string> => {
+    const token = useAuthStore.getState().token
+    return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+type ClientState = {
+    clients: ClientInfo[]
+    clientsLoading: boolean
+    error: string | null
+    fetchClients: () => Promise<void>
+    deleteClient: (id: string) => Promise<void>
+}
+
+function normalizeClient(raw: any): ClientInfo {
+    return {
+        id: String(raw.id ?? raw._id ?? ""),
+        name: String(raw.name ?? ""),
+        phone: raw.phone ? String(raw.phone) : undefined,
+        email: raw.email ? String(raw.email) : undefined,
+        tenantId: raw.tenantId ? String(raw.tenantId) : undefined,
+    }
+}
+
+export const useClientStore = create<ClientState>()(
+    (set, get) => ({
+        clients: [],
+        clientsLoading: false,
+        error: null,
+
+        fetchClients: async () => {
+            if (get().clientsLoading) return
+            set({ clientsLoading: true, error: null })
+            try {
+                const res = await apiFetch("/api/clients", { headers: authHeaders() })
+                const data = await res.json()
+
+                if (!res.ok) {
+                    const raw = data?.message
+                    await wait()
+                    set({
+                        error: (typeof raw === "object" ? raw?.message : raw) || "Failed to fetch clients",
+                        clientsLoading: false,
+                    })
+                    return
+                }
+
+                // API response can be array or { data: Array }
+                const list = data?.data ?? data ?? []
+                const fetched: ClientInfo[] = list.map(normalizeClient)
+
+                await wait()
+                set({
+                    clients: fetched,
+                    clientsLoading: false,
+                })
+            } catch (err) {
+                await wait()
+                set({ error: (err as Error).message, clientsLoading: false })
+            }
+        },
+
+        deleteClient: async (id) => {
+            const previousClients = get().clients
+
+            // Optimistic removal
+            set((state) => ({
+                clients: state.clients.filter((client) => client.id !== id),
+            }))
+
+            try {
+                const res = await apiFetch(`/api/clients/${id}`, {
+                    method: "DELETE",
+                    headers: authHeaders(),
+                })
+
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}))
+
+                    // Roll back
+                    set({ clients: previousClients })
+
+                    const message =
+                        json?.message ||
+                        json?.errors?.[0]?.message ||
+                        "Failed to delete client"
+
+                    throw new Error(message)
+                }
+            } catch (err) {
+                set({ clients: previousClients })
+                throw err
+            }
+        },
+    })
+)
+

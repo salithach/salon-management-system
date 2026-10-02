@@ -1,91 +1,186 @@
 "use client"
 
 import { useState } from "react"
-import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCircle2, Loader2 } from "lucide-react"
+import { Package, Plus, X, Search, AlertTriangle, Pencil, Trash2, Minus, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { useInventoryStore, InventoryItem } from "@/store/inventoryStore"
 import DropDown from "@/components/DropDown"
+import LoadingOverlay from "@/components/LoadingOverlay"
 import { INVENTORY_CATEGORIES, INVENTORY_CATEGORY_OPTIONS, INVENTORY_UNIT_OPTIONS } from "@/lib/constants"
 
-const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-800"
-const labelCls = "block text-xs font-medium text-gray-600 mb-1.5"
+// ─── Feature flag ────────────────────────────────────────────────────────────
+const COMING_SOON = false
+// ─────────────────────────────────────────────────────────────────────────────
+
+const inputCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-zinc-850 bg-white text-gray-900 focus:ring-zinc-800"
+const labelCls = "block text-xs font-bold text-gray-600 mb-1.5"
 
 function stockStatus(item: InventoryItem) {
-    if (item.quantity === 0) return { label: "Out of stock", color: "bg-red-100 text-red-600" }
-    if (item.quantity <= item.lowStockThreshold) return { label: "Low stock", color: "bg-amber-100 text-amber-700" }
-    return { label: "In stock", color: "bg-green-100 text-green-700" }
+    if (item.quantity === 0) return { label: "Out of Stock", color: "bg-red-100 text-red-800 border border-red-200" }
+    if (item.quantity <= item.threshold) return { label: "Low Stock", color: "bg-amber-100 text-amber-800 border border-amber-200" }
+    return { label: "In Stock", color: "bg-zinc-100 text-zinc-800 border border-zinc-200" }
 }
 
-type FormData = { name: string; category: string; quantity: string; unit: string; lowStockThreshold: string; notes: string }
-const emptyForm: FormData = { name: "", category: "STYLING", quantity: "", unit: "pcs", lowStockThreshold: "3", notes: "" }
+function getCategoryLabel(categoryCode: string) {
+    const code = categoryCode?.toUpperCase().replace(/\s+/g, "_")
+    return INVENTORY_CATEGORIES.find(c => c.code === code)?.description ?? categoryCode
+}
+
+type AddEditFormData = { name: string; price: number; category: string; quantity: string; unit: string; threshold: string; notes: string }
+type SaleFormData = { id: string, name: string; price: number; quantity: number, stock: number }
+
+const emptyAddEditForm: AddEditFormData = { name: "", price: 0.00, category: "STYLING", quantity: "", unit: "pcs", threshold: "3", notes: "" }
+const emptySaleForm: SaleFormData = { id: "", name: "", price: 0.00, quantity: 0, stock: 0 }
+
+import { useEffect } from "react"
 
 export default function InventoryPage() {
-    const { items, _hasHydrated, addItem, updateItem, deleteItem, adjustQty } = useInventoryStore()
+    const { items, _hasHydrated, inventoryLoading, fetchInventory, addItem, updateItem, deleteItem, adjustQty, sellItem } = useInventoryStore()
 
     const [search, setSearch] = useState("")
     const [categoryFilter, setCategoryFilter] = useState("ALL")
     const [modal, setModal] = useState<"add" | "edit" | null>(null)
+    const [saleModal, setSaleModal] = useState<"sell" | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [form, setForm] = useState<FormData>(emptyForm)
+    const [addEditForm, setAddEditForm] = useState<AddEditFormData>(emptyAddEditForm)
+    const [saleForm, setSaleForm] = useState<SaleFormData>(emptySaleForm)
     const [formError, setFormError] = useState("")
+    const [saleFormError, setSaleFormError] = useState("")
+    const [confirmDel, setConfirmDel] = useState<InventoryItem | null>(null)
 
-    if (!_hasHydrated) return (
-        <div className="flex items-center justify-center h-48 text-gray-400 gap-2">
-            <Loader2 size={18} className="animate-spin" /> Loading inventory…
+    useEffect(() => {
+        fetchInventory().then(() => {})
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // ── Feature flag: show Coming Soon instead of actual content ──────────────
+    if (COMING_SOON) return (
+        <div className="flex flex-col items-center justify-center py-32 text-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-100 flex items-center justify-center">
+                <Package size={28} className="text-zinc-400" />
+            </div>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900">Inventory — Coming Soon</h2>
+                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                    Full inventory management with stock tracking, low-stock alerts and supplier notes is on its way.
+                </p>
+            </div>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                In Development
+            </span>
         </div>
     )
 
+
+    const showLoading = !_hasHydrated || inventoryLoading
+
     const filtered = items.filter((item) => {
         const matchSearch = item.name.toLowerCase().includes(search.toLowerCase())
-        const matchCat = categoryFilter === "ALL" || item.category === categoryFilter
+        const itemCatNormalized = item.category?.toUpperCase().replace(/\s+/g, "_")
+        const matchCat = categoryFilter === "ALL" || itemCatNormalized === categoryFilter.toUpperCase()
         return matchSearch && matchCat
     })
 
-    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.lowStockThreshold).length
+    const lowCount = items.filter((i) => i.quantity > 0 && i.quantity <= i.threshold).length
     const outCount = items.filter((i) => i.quantity === 0).length
 
-    const openAdd = () => { setForm(emptyForm); setFormError(""); setModal("add") }
+    const openAdd = () => { setAddEditForm(emptyAddEditForm); setFormError(""); setModal("add") }
+
     const openEdit = (item: InventoryItem) => {
-        setForm({
+        setAddEditForm({
             name: item.name, category: item.category,
             quantity: String(item.quantity), unit: item.unit,
-            lowStockThreshold: String(item.lowStockThreshold),
+            threshold: String(item.threshold),
+            price: item.price ?? 0.00,
             notes: item.notes ?? "",
         })
         setEditingId(item.id)
         setFormError("")
         setModal("edit")
     }
-    const closeModal = () => { setModal(null); setEditingId(null) }
 
-    const handleSave = () => {
-        if (!form.name.trim()) { setFormError("Item name is required."); return }
-        if (!form.quantity || isNaN(Number(form.quantity))) { setFormError("Valid quantity is required."); return }
-        const payload = {
-            name: form.name.trim(),
-            category: form.category,
-            quantity: Number(form.quantity),
-            unit: form.unit,
-            lowStockThreshold: Number(form.lowStockThreshold) || 0,
-            notes: form.notes.trim() || undefined,
-        }
-        if (modal === "add") {
-            addItem(payload)
-            toast.success("Item added", { description: `${payload.name} added to inventory.` })
-        } else if (modal === "edit" && editingId) {
-            updateItem(editingId, payload)
-            toast.success("Item updated", { description: `${payload.name} has been updated.` })
-        }
-        closeModal()
+    const openSale = (item: InventoryItem) => {
+        setSaleForm({
+            id: item.id,
+            name: item.name,
+            price: item.price ?? 0.00,
+            quantity: 1,
+            stock: item.quantity
+        })
+        setSaleModal("sell")
+        setSaleFormError("")
     }
 
-    const handleDelete = (item: InventoryItem) => {
-        deleteItem(item.id)
-        toast.success("Item removed", { description: `${item.name} removed from inventory.` })
+    const closeModal = () => { setModal(null); setEditingId(null) }
+
+    const closeSaleModal = () => { setSaleModal(null) }
+
+    const handleSave = async () => {
+        if (!addEditForm.name.trim()) { setFormError("Item name is required."); return }
+        if (!addEditForm.quantity || isNaN(Number(addEditForm.quantity))) { setFormError("Valid quantity is required."); return }
+        const payload = {
+            name: addEditForm.name.trim(),
+            category: addEditForm.category,
+            quantity: Number(addEditForm.quantity),
+            unit: addEditForm.unit,
+            price: Number(addEditForm.price),
+            threshold: Number(addEditForm.threshold) || 0,
+            notes: addEditForm.notes.trim() || undefined,
+        }
+        try {
+            if (modal === "add") {
+                await addItem(payload)
+                toast.success("Item added", { description: `${payload.name} added to inventory.` })
+            } else if (modal === "edit" && editingId) {
+                await updateItem(editingId, payload)
+                toast.success("Item updated", { description: `${payload.name} has been updated.` })
+            }
+            closeModal()
+        } catch (err) {
+            setFormError((err as Error).message)
+        }
+    }
+
+    const handleDelete = async (item: InventoryItem) => {
+        try {
+            await deleteItem(item.id)
+            toast.success("Item removed", { description: `${item.name} removed from inventory.` })
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
+    }
+
+    const handleAdjustQty = async (id: string, delta: number) => {
+        try {
+            await adjustQty(id, delta)
+        } catch (err) {
+            toast.error((err as Error).message)
+        }
+    }
+
+    const handleSale = async () => {
+        const payload = {
+            id: saleForm.id,
+            name: saleForm.name,
+            price: Number(saleForm.price),
+            quantity: Number(saleForm.quantity),
+        }
+        if (!saleForm.price) { setSaleFormError("Price is required."); return }
+        if (!saleForm.quantity || isNaN(Number(saleForm.quantity)) || saleForm.quantity <= 0) { setSaleFormError("Valid quantity is required."); return }
+        try {
+            await sellItem(payload)
+            setSaleFormError("")
+            toast.success("Item sold", { description: `${payload.name} has been sold by ${payload.quantity} at $${payload.price} each.` })
+            fetchInventory().then(() => {})
+            closeSaleModal()
+        } catch (err) {
+            setSaleFormError((err as Error).message)
+        }
     }
 
     return (
         <>
+            {showLoading && <LoadingOverlay message="Loading inventory…" />}
             {/* Alert banner */}
             {(lowCount > 0 || outCount > 0) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3 flex-wrap">
@@ -102,7 +197,7 @@ export default function InventoryPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: "Total Items",  value: items.length },
-                    { label: "In Stock",     value: items.filter(i => i.quantity > i.lowStockThreshold).length },
+                    { label: "In Stock",     value: items.filter(i => i.quantity > i.threshold).length },
                     { label: "Low Stock",    value: lowCount },
                     { label: "Out of Stock", value: outCount },
                 ].map((s) => (
@@ -116,7 +211,7 @@ export default function InventoryPage() {
             {/* Toolbar */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
                 {/* Search */}
-                <div className="relative flex-1 min-w-[180px]">
+                <div className="relative flex-1 min-w-44">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         value={search}
@@ -167,7 +262,7 @@ export default function InventoryPage() {
                                 <div className="flex items-start justify-between gap-2 mb-3">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>
+                                        <p className="text-xs text-gray-450 text-gray-500 font-medium mt-0.5">{getCategoryLabel(item.category)}</p>
                                     </div>
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${status.color}`}>
                                         {status.label}
@@ -182,14 +277,14 @@ export default function InventoryPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => adjustQty(item.id, -1)}
+                                            onClick={() => handleAdjustQty(item.id, -1)}
                                             disabled={item.quantity === 0}
                                             className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-30"
                                         >
                                             <Minus size={13} />
                                         </button>
                                         <button
-                                            onClick={() => adjustQty(item.id, 1)}
+                                            onClick={() => handleAdjustQty(item.id, 1)}
                                             className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition"
                                         >
                                             <Plus size={13} />
@@ -201,15 +296,15 @@ export default function InventoryPage() {
                                 <div className="mb-3">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-[10px] text-gray-400">Stock level</span>
-                                        <span className="text-[10px] text-gray-400">Threshold: {item.lowStockThreshold}</span>
+                                        <span className="text-[10px] text-gray-400">Threshold: {item.threshold}</span>
                                     </div>
                                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                         <div
                                             className={`h-full rounded-full transition-all duration-500 ${
                                                 item.quantity === 0 ? "bg-red-400" :
-                                                item.quantity <= item.lowStockThreshold ? "bg-amber-400" : "bg-green-400"
+                                                item.quantity <= item.threshold ? "bg-amber-400" : "bg-green-400"
                                             }`}
-                                            style={{ width: `${Math.min(100, (item.quantity / Math.max(item.lowStockThreshold * 3, 1)) * 100)}%` }}
+                                            style={{ width: `${Math.min(100, (item.quantity / Math.max(item.threshold * 3, 1)) * 100)}%` }}
                                         />
                                     </div>
                                 </div>
@@ -221,13 +316,19 @@ export default function InventoryPage() {
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 border-t border-gray-50 pt-3">
                                     <button
+                                        onClick={() => openSale(item)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-zinc-800 text-white px-4 py-2 rounded-lg hover:bg-zinc-700 transition shrink-0"
+                                    >
+                                        <Pencil size={12} /> Sell
+                                    </button>
+                                    <button
                                         onClick={() => openEdit(item)}
                                         className="flex-1 flex items-center justify-center gap-1.5 text-xs border border-gray-200 py-2 rounded-lg hover:bg-gray-50 transition"
                                     >
                                         <Pencil size={12} /> Edit
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(item)}
+                                        onClick={() => setConfirmDel(item)}
                                         className="flex items-center justify-center gap-1.5 text-xs border border-red-100 text-red-500 py-2 px-3 rounded-lg hover:bg-red-50 transition"
                                     >
                                         <Trash2 size={12} />
@@ -258,7 +359,7 @@ export default function InventoryPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className={labelCls}>Item Name</label>
-                                <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                                <input type="text" value={addEditForm.name} onChange={e => setAddEditForm({ ...addEditForm, name: e.target.value })}
                                     placeholder="e.g. Hair Wax" className={inputCls} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -266,34 +367,39 @@ export default function InventoryPage() {
                                     <label className={labelCls}>Category</label>
                                     <DropDown
                                         options={INVENTORY_CATEGORY_OPTIONS}
-                                        value={form.category}
-                                        onChange={(v) => setForm({ ...form, category: v })}
+                                        value={addEditForm.category}
+                                        onChange={(v) => setAddEditForm({ ...addEditForm, category: v })}
                                     />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Unit</label>
                                     <DropDown
                                         options={INVENTORY_UNIT_OPTIONS}
-                                        value={form.unit}
-                                        onChange={(v) => setForm({ ...form, unit: v })}
+                                        value={addEditForm.unit}
+                                        onChange={(v) => setAddEditForm({ ...addEditForm, unit: v })}
                                     />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={labelCls}>Quantity</label>
-                                    <input type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })}
+                                    <input type="number" min="0" value={addEditForm.quantity} onChange={e => setAddEditForm({ ...addEditForm, quantity: e.target.value })}
                                         placeholder="0" className={inputCls} />
                                 </div>
                                 <div>
                                     <label className={labelCls}>Low Stock Alert At</label>
-                                    <input type="number" min="0" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })}
+                                    <input type="number" min="0" value={addEditForm.threshold} onChange={e => setAddEditForm({ ...addEditForm, threshold: e.target.value })}
                                         placeholder="3" className={inputCls} />
                                 </div>
                             </div>
                             <div>
+                                <label className={labelCls}>Item Price</label>
+                                <input type="number" min="0" value={addEditForm.price} onChange={e => setAddEditForm({ ...addEditForm, price: Number(e.target.value) })}
+                                      className={inputCls} />
+                            </div>
+                            <div>
                                 <label className={labelCls}>Notes <span className="text-gray-400">(optional)</span></label>
-                                <input type="text" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
+                                <input type="text" value={addEditForm.notes} onChange={e => setAddEditForm({ ...addEditForm, notes: e.target.value })}
                                     placeholder="e.g. Order from supplier X" className={inputCls} />
                             </div>
                         </div>
@@ -304,6 +410,85 @@ export default function InventoryPage() {
                                 className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition flex items-center justify-center gap-1.5">
                                 <CheckCircle2 size={14} />
                                 {modal === "add" ? "Add Item" : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sell Modal */}
+            {saleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">{saleModal === "sell" ? "Sell Item" : "Item"}</h3>
+                            </div>
+                            <button onClick={closeSaleModal} className="text-gray-400 hover:text-gray-700 transition"><X size={20} /></button>
+                        </div>
+                        <div className="mb-4 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900">
+                            <p className="text-sm"><span className="text-gray-900 font-semibold">Name</span>: {saleForm.name}</p>
+                            <p className="text-xs text-gray-500 mt-2">Current Stock: {saleForm.stock}</p>
+                        </div>
+
+                        {saleFormError && (
+                            <div className="mb-4 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">{saleFormError}</div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelCls}>Sale Quantity</label>
+                                    <input type="number" min="0" value={saleForm.quantity} onChange={e => setSaleForm({ ...saleForm, quantity: Number(e.target.value) })}
+                                           placeholder="0" className={inputCls} />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>Item Price</label>
+                                    <input type="number" min="0" value={saleForm.price} onChange={e => setSaleForm({ ...saleForm, price: Number(e.target.value) })}
+                                           className={inputCls} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={closeSaleModal} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+                            <button onClick={() => handleSale()}
+                                    className="flex-1 py-2.5 text-sm bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition flex items-center justify-center gap-1.5">
+                                <CheckCircle2 size={14} />
+                                {saleModal === "sell" ? "Sell Item" : "Save Changes"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {confirmDel && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="absolute inset-0" onClick={() => setConfirmDel(null)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 text-gray-900 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                                <Trash2 size={17} className="text-red-650 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Remove Inventory Item</h3>
+                                <p className="text-xs text-gray-400 mt-1">This action cannot be undone.</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                            Are you sure you want to permanently remove <span className="font-semibold text-gray-700">&ldquo;{confirmDel.name}&rdquo;</span> from your salon inventory directory?
+                        </p>
+                        <div className="flex gap-3 pt-1">
+                            <button onClick={() => setConfirmDel(null)} className="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 transition font-semibold">Cancel</button>
+                            <button
+                                onClick={async () => {
+                                    await handleDelete(confirmDel)
+                                    setConfirmDel(null)
+                                }}
+                                className="flex-1 py-2.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
+                            >
+                                Remove Item
                             </button>
                         </div>
                     </div>

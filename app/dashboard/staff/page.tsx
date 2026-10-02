@@ -212,7 +212,7 @@ export default function StaffPage() {
                             }`}
                         >
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center text-lg font-semibold shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center text-2xl font-semibold shrink-0">
                                     {member.name[0]}
                                 </div>
                                 <div className="flex-1 min-w-0">

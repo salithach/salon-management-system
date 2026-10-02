@@ -1,17 +1,11 @@
 import { create } from "zustand"
 import { useAuthStore } from "@/store/authStore"
-import { apiFetch } from "@/lib/apiFetch"
+import { apiFetch, getLocalDateString } from "@/lib/apiFetch"
+import { wait } from "@/lib/wait"
 
 const authHeaders = (): Record<string, string> => {
     const token = useAuthStore.getState().token
     return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
-    const elapsed = Date.now() - start
-    return new Promise<void>(
-        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
-    )
 }
 
 export type StaffMember = {
@@ -116,7 +110,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         if (get().assignmentsLoading) return
         set({ assignmentsLoading: true })
         try {
-            const date = new Date().toISOString().slice(0, 10)
+            const date = getLocalDateString()
             const res = await apiFetch(`/api/assignments?date=${date}`, { headers: authHeaders() })
             const data = await res.json()
             if (!res.ok) { set({ assignmentsLoading: false }); return }
@@ -130,7 +124,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     },
 
     assign: async (members) => {
-        const date = new Date().toISOString().slice(0, 10)
+        const date = getLocalDateString()
         const res = await apiFetch("/api/assignments", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -152,7 +146,7 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
     },
 
     unassign: async (member) => {
-        const date = new Date().toISOString().slice(0, 10)
+        const date = getLocalDateString()
         const res = await apiFetch("/api/assignments", {
             method: "DELETE",
             headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -182,5 +176,3 @@ export const useStaffAssignmentStore = create<StaffState>()((set, get) => ({
         set({ assignedToday: [], assignmentId: null })
     },
 }))
-
-
