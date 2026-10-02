@@ -16,7 +16,7 @@ import { useShallow } from "zustand/react/shallow"
 import LoadingOverlay from "@/components/LoadingOverlay"
 import DropDown from "@/components/DropDown"
 import {useAppointmentStore} from "@/store/appointmentStore";
-
+import { getLocalDateString } from "@/lib/apiFetch"
 
 export default function DashboardPage() {
     const { assignedToday, assignmentsLoading, fetchAssignments } = useStaffAssignmentStore(
@@ -46,10 +46,11 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (!authReady) return
+        const date = getLocalDateString()
         if (!user) fetchProfile().then(() => {})
         fetchAssignments().then(() => {})
         fetchJobs().then(() => {})
-        fetchAppointments().then(() => {})
+        fetchAppointments(date).then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authReady])
 
@@ -455,7 +456,7 @@ export default function DashboardPage() {
                 {[
                     { title: "Add Client", desc: "Register a new client profile", icon: Users, href: "/dashboard/clients" },
                     { title: "Manage Services", desc: "Update pricing & service list", icon: Scissors, href: "/dashboard/services" },
-                    { title: "View Reports", desc: "Monthly revenue & insights", icon: BarChart3, href: "/dashboard/reports" },
+                    { title: "View Analytics", desc: "Monthly revenue & insights", icon: BarChart3, href: "/dashboard/analytics" },
                 ].map(({ title, desc, icon: Icon, href }) => (
                     <Link
                         key={title}

@@ -128,7 +128,7 @@ export default function AboutPage() {
                             { icon: "📅", label: "Appointments",  value: "42 booked",   color: "bg-blue-500/10 border-blue-400/20" },
                             { icon: "👤", label: "New clients",   value: "3 today",     color: "bg-sky-500/10 border-sky-400/20" },
                             { icon: "💳", label: "Revenue",       value: "$2,840",      color: "bg-indigo-500/10 border-indigo-400/20" },
-                            { icon: "📈", label: "Reports",       value: "50 jobs",  color: "bg-purple-500/10 border-purple-400/20"   },
+                            { icon: "📈", label: "Analytics",       value: "50 jobs",  color: "bg-purple-500/10 border-purple-400/20"   },
                         ].map((row) => (
                             <div key={row.label} className={`flex items-center justify-between ${row.color} border rounded-xl px-4 py-3`}>
                                 <div className="flex items-center gap-2.5 text-sm text-slate-300">

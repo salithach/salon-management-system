@@ -4,9 +4,6 @@ import {
     Area,
     AreaChart,
     CartesianGrid,
-    Cell,
-    Pie,
-    PieChart,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -16,21 +13,21 @@ import {BarChart3, CalendarDays, Download, Users} from "lucide-react"
 import {useEffect, useMemo, useRef, useState} from "react";
 import {useStatStore} from "@/store/statStore";
 import {useAuthStore} from "@/store/authStore";
+import {DateRange, RangeKeyDict} from "react-date-range";
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 
 import LoadingOverlay from "@/components/LoadingOverlay";
+import DonutCard from "@/components/DonutCard";
+import {getLocalDateString} from "@/lib/apiFetch";
 
 const COMING_SOON = false
 
 const SERVICE_COLORS = ["#27272a", "#52525b", "#71717a", "#a1a1aa", "#d4d4d8"]
 const STATUS_COLORS = { confirmed: "#27272a", pending: "#d4d4d8" }
 
-
-const formatSignedPercent = (value: number) => {
-    const v = value ?? 0
-    return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`
-}
 
 
 const formatDateLabel = (date: string, withYear = false) =>
@@ -39,6 +36,7 @@ const formatDateLabel = (date: string, withYear = false) =>
         day: "numeric",
         ...(withYear ? { year: "numeric" as const } : {}),
     })
+
 
 export default function ReportsPage() {
     const {
@@ -53,18 +51,66 @@ export default function ReportsPage() {
     const formatCurrency = (value: number) =>
         `${(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} ${currency}`
 
-    const formatCurrencyCompact = (value: number) =>
-        `${(value / 1000).toFixed(1)}k ${currency}`
 
     useEffect(() => {
         if (authReady && !user) fetchProfile().then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authReady])
 
+
+    const today = new Date()
+    const [dateRange, setDateRange] = useState<Array<{
+        startDate: Date
+        endDate: Date
+        key: string
+    }>>([
+        {
+            startDate: today,
+            endDate: today,
+            key: "selection",
+        },
+    ])
+    const [showDatePicker, setShowDatePicker] = useState(false)
+
+    // Range that has actually been applied (both start & end chosen) — drives the API call
+    const [appliedRange, setAppliedRange] = useState<{ startDate: Date; endDate: Date }>({
+        startDate: today,
+        endDate: today,
+    })
+    // true after the first click (start date) until the second click (end date)
+    const selectingEndRef = useRef(false)
+
+    const closeDatePicker = () => {
+        // Discard a half-finished selection (start picked, end not picked)
+        if (selectingEndRef.current) {
+            selectingEndRef.current = false
+            setDateRange([{ ...appliedRange, key: "selection" }])
+        }
+        setShowDatePicker(false)
+    }
+
+    const rangeStart = appliedRange.startDate
+    const rangeEnd = appliedRange.endDate
+    const rangeDays = rangeStart && rangeEnd
+        ? Math.round(
+            (new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate()).getTime() -
+                new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()).getTime()) /
+            86400000
+        ) + 1
+        : 1
+    const rangeLabel = rangeStart && rangeEnd
+        ? rangeDays === 1
+            ? rangeStart.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : `${rangeStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${rangeEnd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+        : ""
+
     useEffect(() => {
-        fetchStats().then(() => {})
+        fetchStats(
+            getLocalDateString(appliedRange.startDate),
+            getLocalDateString(appliedRange.endDate)
+        ).then(() => {})
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [appliedRange])
 
     const reportRef = useRef<HTMLDivElement>(null)
     const [exporting, setExporting] = useState(false)
@@ -73,36 +119,63 @@ export default function ReportsPage() {
         if (!reportRef.current || exporting) return
         setExporting(true)
         try {
-            const canvas = await html2canvas(reportRef.current, {
-                scale: 1.5,
-                backgroundColor: "#f9fafb",
-                useCORS: true,
-            })
-            // JPEG compresses dramatically better than PNG for this kind of
-            // content (gradients/anti-aliased text), keeping file size small.
-            const imgData = canvas.toDataURL("image/jpeg", 0.85)
+            // Render each top-level section on its own so page breaks never cut
+            // through a card (e.g. the donut charts).
+            const sections = Array.from(reportRef.current.children) as HTMLElement[]
 
             const pdf = new jsPDF({ orientation: "p", unit: "pt", format: "a4", compress: true })
             const pageWidth = pdf.internal.pageSize.getWidth()
             const pageHeight = pdf.internal.pageSize.getHeight()
-            const imgWidth = pageWidth
-            const imgHeight = (canvas.height * imgWidth) / canvas.width
+            const margin = 24
+            const gap = 12
+            const contentWidth = pageWidth - margin * 2
+            const maxHeight = pageHeight - margin * 2
+            let y = margin
 
-            let heightLeft = imgHeight
-            let position = 0
+            for (const el of sections) {
+                const canvas = await html2canvas(el, {
+                    scale: 1.5,
+                    backgroundColor: "#f9fafb",
+                    useCORS: true,
+                })
+                const ratio = contentWidth / canvas.width
+                const drawHeight = canvas.height * ratio
 
-            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
-            heightLeft -= pageHeight
-
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeight
-                pdf.addPage()
-                pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight)
-                heightLeft -= pageHeight
+                if (drawHeight <= maxHeight) {
+                    // Fits on a page: move to a new page if the rest of this one is too small
+                    if (y + drawHeight > pageHeight - margin && y > margin) {
+                        pdf.addPage()
+                        y = margin
+                    }
+                    // JPEG keeps file size small for gradients/anti-aliased text
+                    pdf.addImage(canvas.toDataURL("image/jpeg", 0.85), "JPEG", margin, y, contentWidth, drawHeight)
+                    y += drawHeight + gap
+                } else {
+                    // Taller than a page (long tables): slice across pages
+                    if (y > margin) {
+                        pdf.addPage()
+                        y = margin
+                    }
+                    const slicePx = Math.floor(maxHeight / ratio)
+                    for (let sy = 0; sy < canvas.height; sy += slicePx) {
+                        const h = Math.min(slicePx, canvas.height - sy)
+                        const slice = document.createElement("canvas")
+                        slice.width = canvas.width
+                        slice.height = h
+                        slice.getContext("2d")?.drawImage(canvas, 0, sy, canvas.width, h, 0, 0, canvas.width, h)
+                        if (sy > 0) {
+                            pdf.addPage()
+                            y = margin
+                        }
+                        pdf.addImage(slice.toDataURL("image/jpeg", 0.85), "JPEG", margin, y, contentWidth, h * ratio)
+                        y += h * ratio + gap
+                    }
+                }
             }
 
-            const dateStr = new Date().toLocaleDateString('en-CA');
-            pdf.save(`salon-report-${dateStr}.pdf`)
+            const startStr = getLocalDateString(appliedRange.startDate)
+            const endStr = getLocalDateString(appliedRange.endDate)
+            pdf.save(`salon-analytics-${startStr}-${endStr}.pdf`)
         } catch (err) {
             console.error("Failed to export report as PDF", err)
         } finally {
@@ -114,17 +187,13 @@ export default function ReportsPage() {
     const appointmentStatus = stats?.appointmentStatus
     const jobStaffAnalytics = stats?.jobStaffAnalytics
 
-    const monthlyBreakdown = useMemo(
-        () => stats?.monthlyBreakdown ?? [],
-        [stats?.monthlyBreakdown]
+    const dailyRevenue = useMemo(
+        () => stats?.dailyRevenue ?? [],
+        [stats?.dailyRevenue]
     )
     const revenueByService = useMemo(
         () => stats?.revenueByService ?? [],
         [stats?.revenueByService]
-    )
-    const weeklyRevenue = useMemo(
-        () => stats?.weeklyRevenue ?? [],
-        [stats?.weeklyRevenue]
     )
     const servicesMix = useMemo(
         () => stats?.servicesMix ?? [],
@@ -144,9 +213,9 @@ export default function ReportsPage() {
     )
 
 
-    const maxMonthlyRevenue = useMemo(
-        () => Math.max(...monthlyBreakdown.map((m) => m.revenue), 1),
-        [monthlyBreakdown]
+    const jobsByDate = useMemo(
+        () => new Map(dailyJobBreakdown.map((d) => [d.date, d.jobs])),
+        [dailyJobBreakdown]
     )
 
     const totalServiceRevenue = useMemo(
@@ -172,6 +241,30 @@ export default function ReportsPage() {
             { name: "Pending", value: appointmentStatus.pending, color: STATUS_COLORS.pending },
         ]
     }, [appointmentStatus])
+
+    const revenueShareData = useMemo(
+        () =>
+            revenueByService
+                .filter((s) => s.revenue > 0)
+                .map((s, i) => ({
+                    name: s.service,
+                    value: s.revenue,
+                    color: SERVICE_COLORS[i % SERVICE_COLORS.length],
+                })),
+        [revenueByService]
+    )
+
+    const staffWorkloadData = useMemo(
+        () =>
+            staffWorkDistribution
+                .filter((m) => m.jobs > 0)
+                .map((m, i) => ({
+                    name: m.staff,
+                    value: m.jobs,
+                    color: SERVICE_COLORS[i % SERVICE_COLORS.length],
+                })),
+        [staffWorkDistribution]
+    )
 
     const maxStaffJobs = useMemo(
         () => Math.max(...staffWorkDistribution.map((m) => m.jobs), 1),
@@ -235,29 +328,79 @@ export default function ReportsPage() {
                 </button>
             </div>
 
+            {/* Date Range Picker */}
+            <div className="mb-6 relative">
+                <button
+                    onClick={() => (showDatePicker ? closeDatePicker() : setShowDatePicker(true))}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-900 hover:bg-gray-50 transition"
+                >
+                    📅 {dateRange[0]?.startDate?.toLocaleDateString("en-US")}
+                    {dateRange[0]?.startDate?.getTime() !== dateRange[0]?.endDate?.getTime() &&
+                        ` - ${dateRange[0]?.endDate?.toLocaleDateString("en-US")}`}
+                </button>
+                {showDatePicker && (
+                    <div className="absolute z-50 mt-2 bg-white rounded-lg border border-gray-200 shadow-lg left-0 overflow-hidden">
+                        <div className="p-4 flex flex-col gap-3">
+                            <DateRange
+                                ranges={dateRange}
+                                onChange={(item: RangeKeyDict) => {
+                                    const selection = item.selection
+                                    if (selection?.startDate && selection?.endDate) {
+                                        setDateRange([{
+                                            startDate: selection.startDate,
+                                            endDate: selection.endDate,
+                                            key: "selection",
+                                        }])
+                                        if (!selectingEndRef.current) {
+                                            // first click: start date chosen, wait for end date
+                                            selectingEndRef.current = true
+                                        } else {
+                                            // second click: both dates chosen → apply & fetch
+                                            selectingEndRef.current = false
+                                            setAppliedRange({
+                                                startDate: selection.startDate,
+                                                endDate: selection.endDate,
+                                            })
+                                        }
+                                    }
+                                }}
+                                showDateDisplay={false}
+                                showPreview={true}
+                            />
+                            <button
+                                onClick={closeDatePicker}
+                                className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 transition"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             <div ref={reportRef} className="space-y-6 bg-gray-50 p-1">
                 {/* KPI cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     {[
                         {
-                            label: "Total Revenue",
+                            label: "Revenue",
                             value: formatCurrency(overview?.monthlyRevenue ?? 0),
-                            change: `${formatSignedPercent(overview?.monthlyRevenueChangePercent ?? 0)} vs last month`,
+                            change: rangeLabel,
                         },
                         {
-                            label: "Total Jobs",
+                            label: "Jobs",
                             value: String(overview?.monthlyJobs ?? 0),
-                            change: `${formatSignedPercent(overview?.monthlyJobsChangePercent ?? 0)} vs last month`,
+                            change: `Avg ${(rangeDays > 0 ? (overview?.monthlyJobs ?? 0) / rangeDays : 0).toFixed(1)} per day`,
                         },
                         {
-                            label: "Total Appointments",
+                            label: "Appointments",
                             value: String(overview?.totalAppointments ?? 0),
-                            change: `${formatSignedPercent(overview?.appointmentsChangePercent ?? 0)} vs last month`,
+                            change: `Avg ${(rangeDays > 0 ? (overview?.totalAppointments ?? 0) / rangeDays : 0).toFixed(1)} per day`,
                         },
                         {
-                            label: "Active Staff",
-                            value: String(jobStaffAnalytics?.activeStaff ?? 0),
-                            change: "active staff members for today",
+                            label: "Avg. Daily Revenue",
+                            value: formatCurrency(rangeDays > 0 ? (overview?.monthlyRevenue ?? 0) / rangeDays : 0),
+                            change: `Over ${rangeDays} day${rangeDays !== 1 ? "s" : ""}`,
                         },
                     ].map((s) => (
                         <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -269,31 +412,41 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                    {/* Bar chart */}
+                    {/* Revenue over the selected range */}
                     <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                        <h2 className="text-sm font-semibold text-gray-900 mb-6">Monthly Revenue</h2>
-                        {monthlyBreakdown.length === 0 ? (
-                            <div className="h-40 flex items-center justify-center">
-                                <p className="text-xs text-gray-400">No revenue data available.</p>
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="text-sm font-semibold text-gray-900">Daily Revenue</h2>
+                                <p className="text-xs text-gray-400 mt-0.5">Revenue per day · {rangeLabel}</p>
+                            </div>
+                            <CalendarDays size={18} className="text-gray-400" />
+                        </div>
+                        {dailyRevenue.length === 0 ? (
+                            <div className="h-52 flex items-center justify-center">
+                                <p className="text-xs text-gray-400">No revenue data for selected date range.</p>
                             </div>
                         ) : (
-                            <div className="flex items-end gap-3 h-40">
-                                {monthlyBreakdown.map((m) => {
-                                    const height = Math.round((m.revenue / maxMonthlyRevenue) * 100)
-                                    return (
-                                        <div key={m.month} className="flex-1 flex flex-col items-center gap-2 h-full">
-                                            <span className="text-xs text-gray-500">{formatCurrencyCompact(m.revenue)}</span>
-                                            <div className="w-full flex-1 flex items-end">
-                                                <div
-                                                    className="w-full rounded-t-md bg-black transition-all"
-                                                    style={{ height: `${Math.max(height, m.revenue > 0 ? 2 : 0)}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs text-gray-400">{m.month}</span>
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                            <ResponsiveContainer width="100%" height={220}>
+                                <AreaChart data={dailyRevenue}>
+                                    <defs>
+                                        <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#27272a" stopOpacity={0.15} />
+                                            <stop offset="95%" stopColor="#27272a" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false}
+                                           tickFormatter={(d) => formatDateLabel(String(d))} />
+                                    <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
+                                        labelFormatter={(d) => formatDateLabel(String(d), true)}
+                                        formatter={(v) => [`${Number(v).toLocaleString()} ${currency}`, "Revenue"]}
+                                    />
+                                    <Area type="monotone" dataKey="revenue" stroke="#27272a" strokeWidth={2}
+                                          fill="url(#revenueGrad)" dot={{ fill: "#27272a", r: 3 }} activeDot={{ r: 5 }} />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         )}
                     </div>
 
@@ -329,139 +482,60 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Analytics Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                    {/* Weekly Revenue — Area chart (spans 2 cols) */}
-                    <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                        <div className="flex items-center justify-between mb-5">
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-900">Weekly Revenue</h3>
-                                <p className="text-xs text-gray-400 mt-0.5">This week&apos;s daily earnings</p>
-                            </div>
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                                (stats?.weeklyRevenueChangePercent ?? 0) >= 0
-                                    ? "text-green-600 bg-green-50"
-                                    : "text-red-600 bg-red-50"
-                            }`}>
-                                {formatSignedPercent(stats?.weeklyRevenueChangePercent ?? 0)} vs last week
-                            </span>
-                        </div>
-                        <ResponsiveContainer width="100%" height={180}>
-                            <AreaChart data={weeklyRevenue}>
-                                <defs>
-                                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#27272a" stopOpacity={0.15} />
-                                        <stop offset="95%" stopColor="#27272a" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} width={40}
-                                       tickFormatter={(v) => `${v}`} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 12 }}
-                                    formatter={(v) => [`${Number(v).toLocaleString()} ${currency}`, "Revenue"]}
-                                />
-                                <Area type="monotone" dataKey="revenue" stroke="#27272a" strokeWidth={2}
-                                      fill="url(#revenueGrad)" dot={{ fill: "#27272a", r: 3 }} activeDot={{ r: 5 }} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Right column: 2 small donuts */}
-                    <div className="flex flex-col gap-4">
-                        {/* Service category donut */}
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">Appointments Services Mix</h3>
-                            <p className="text-xs text-gray-400 mb-3">Appointments by category</p>
-                            {servicesMixData.length === 0 ? (
-                                <p className="text-xs text-gray-400">No category data available.</p>
-                            ) : (
-                                <div className="flex items-center gap-4">
-                                    <ResponsiveContainer width={100} height={100}>
-                                        <PieChart>
-                                            <Pie data={servicesMixData} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
-                                                 dataKey="value" strokeWidth={2}>
-                                                {servicesMixData.map((entry) => (
-                                                    <Cell key={entry.name} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }}
-                                                     formatter={(v) => [`${v}%`, ""]} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="flex flex-col gap-1.5">
-                                        {servicesMixData.map((s) => (
-                                            <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
-                                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                                                {s.name} <span className="ml-auto text-gray-400 font-medium">{s.value}%</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Appointment status donut */}
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex-1">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">Appointment Status</h3>
-                            <p className="text-xs text-gray-400 mb-3">Today&apos;s confirmation rate</p>
-                            {appointmentStatusData.length === 0 ? (
-                                <p className="text-xs text-gray-400">No appointment status data available.</p>
-                            ) : (
-                                <div className="flex items-center gap-4">
-                                    <ResponsiveContainer width={100} height={100}>
-                                        <PieChart>
-                                            <Pie data={appointmentStatusData} cx="50%" cy="50%" innerRadius={28} outerRadius={46}
-                                                 dataKey="value" strokeWidth={2}>
-                                                {appointmentStatusData.map((entry) => (
-                                                    <Cell key={entry.name} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="flex flex-col gap-1.5">
-                                        {appointmentStatusData.map((s) => (
-                                            <div key={s.name} className="flex items-center gap-2 text-xs text-gray-600">
-                                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                                                {s.name} <span className="ml-auto font-medium text-gray-800">{s.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <DonutCard
+                        title="Appointments Services Mix"
+                        subtitle="Appointments by category"
+                        data={servicesMixData}
+                        format={(v) => `${v}%`}
+                        emptyText="No category data available."
+                    />
+                    <DonutCard
+                        title="Appointment Status"
+                        subtitle="Confirmation rate"
+                        data={appointmentStatusData}
+                        emptyText="No appointment status data available."
+                    />
+                    <DonutCard
+                        title="Revenue Share"
+                        subtitle="Revenue by service"
+                        data={revenueShareData}
+                        format={formatCurrency}
+                        emptyText="No service revenue data available."
+                    />
+                    <DonutCard
+                        title="Staff Workload"
+                        subtitle="Jobs per staff member"
+                        data={staffWorkloadData}
+                        emptyText="No staff assignments available."
+                    />
                 </div>
 
-                {/* Monthly breakdown table */}
+                {/* Daily breakdown table */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-100">
-                        <h2 className="text-sm font-semibold text-gray-900">Monthly Income Breakdown</h2>
+                        <h2 className="text-sm font-semibold text-gray-900">Daily Income Breakdown</h2>
                     </div>
-                    {monthlyBreakdown.length === 0 ? (
+                    {dailyRevenue.length === 0 ? (
                         <div className="py-12 text-center">
-                            <p className="text-xs text-gray-400">No monthly data available.</p>
+                            <p className="text-xs text-gray-400">No data available for selected date range.</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                 <tr className="bg-gray-50 text-left">
-                                    {["Month", "Revenue", "Jobs", "Appointments", "Avg. Job Revenue"].map((h) => (
+                                    {["Date", "Revenue", "Jobs"].map((h) => (
                                         <th key={h} className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
                                     ))}
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
-                                {[...monthlyBreakdown].reverse().map((m) => (
-                                    <tr key={m.month} className="hover:bg-gray-50 transition">
-                                        <td className="px-6 py-4 font-medium text-gray-700">{m.month}</td>
-                                        <td className="px-6 py-4 text-gray-900">{formatCurrency(m.revenue)}</td>
-                                        <td className="px-6 py-4 text-gray-600">{m.jobs}</td>
-                                        <td className="px-6 py-4 text-gray-600">{m.appointments}</td>
-                                        <td className="px-6 py-4 text-gray-600">{formatCurrency(m.avgJobRevenue)}</td>
+                                {[...dailyRevenue].reverse().map((d) => (
+                                    <tr key={d.date} className="hover:bg-gray-50 transition">
+                                        <td className="px-6 py-4 font-medium text-gray-700">{formatDateLabel(d.date, true)}</td>
+                                        <td className="px-6 py-4 text-gray-900">{formatCurrency(d.revenue)}</td>
+                                        <td className="px-6 py-4 text-gray-600">{jobsByDate.get(d.date) ?? 0}</td>
                                     </tr>
                                 ))}
                                 </tbody>
@@ -479,7 +553,7 @@ export default function ReportsPage() {
                             </h3>
 
                             <p className="text-xs text-gray-400 mt-0.5">
-                                Number of active jobs scheduled per day
+                                Active jobs per day in selected date range
                             </p>
                         </div>
 
@@ -613,8 +687,7 @@ export default function ReportsPage() {
                             </h3>
 
                             <p className="text-xs text-gray-400 mt-1">
-                                Distribution of active jobs across staff
-                                members
+                                Job distribution across staff for selected date range
                             </p>
                         </div>
 
@@ -753,8 +826,7 @@ export default function ReportsPage() {
                                 </h3>
 
                                 <p className="text-xs text-gray-400 mt-1">
-                                    Daily confirmed, pending and cancelled
-                                    appointment activity
+                                    Appointment status per day for selected date range
                                 </p>
                             </div>
 

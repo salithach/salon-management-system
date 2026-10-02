@@ -7,9 +7,14 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: "API_BASE_URL is not configured" }, { status: 500 })
     }
     try {
-        const date = req.nextUrl.searchParams.get("date")
+        const params = new URLSearchParams()
+        for (const key of ["startDate", "endDate"]) {
+            const v = req.nextUrl.searchParams.get(key)
+            if (v) params.set(key, v)
+        }
+        const qs = params.toString()
         const auth = req.headers.get("Authorization") ?? ""
-        const res = await fetch(`${API_BASE}/api/v1/stats?date=${date}`, {
+        const res = await fetch(`${API_BASE}/api/v1/stats${qs ? `?${qs}` : ""}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

@@ -1,6 +1,6 @@
 import { create } from "zustand"
 
-import {apiFetch, getLocalDateString} from "@/lib/apiFetch"
+import { apiFetch } from "@/lib/apiFetch"
 import { useAuthStore } from "@/store/authStore"
 
 
@@ -22,8 +22,8 @@ export type ReportsOverview = {
     avgJobRevenueChangePercent: number
 }
 
-export type RevenueTrendPoint = {
-    label: string
+export type DailyRevenuePoint = {
+    date: string      // YYYY-MM-DD
     revenue: number
 }
 
@@ -43,13 +43,6 @@ export type AppointmentStatusSummary = {
     pending: number
 }
 
-export type MonthlyBreakdownItem = {
-    month: string
-    revenue: number
-    jobs: number
-    appointments: number
-    avgJobRevenue: number
-}
 
 export type DailyJobActivityPoint = {
     date: string
@@ -84,13 +77,11 @@ export type JobStaffAnalytics = {
 
 export type ReportData = {
     overview: ReportsOverview
-    monthlyRevenueTrend: RevenueTrendPoint[]
     revenueByService: RevenueByServiceItem[]
-    weeklyRevenue: RevenueTrendPoint[]
-    weeklyRevenueChangePercent: number
+    dailyRevenue: DailyRevenuePoint[]
+    dailyRevenueChangePercent: number
     servicesMix: ServicesMixItem[]
     appointmentStatus: AppointmentStatusSummary
-    monthlyBreakdown: MonthlyBreakdownItem[]
     jobStaffAnalytics: JobStaffAnalytics
 }
 
@@ -98,7 +89,7 @@ type StatState = {
     stats: ReportData | null
     statsLoading: boolean
     error: string | null
-    fetchStats: (date?: string) => Promise<void>
+    fetchStats: (startDate?: string, endDate?: string) => Promise<void>
 }
 
 export const useStatStore =
@@ -106,12 +97,15 @@ export const useStatStore =
         stats: null,
         statsLoading: false,
         error: null,
-        fetchStats: async (date?: string) => {
+        fetchStats: async (startDate?: string, endDate?: string) => {
             if (get().statsLoading) return
             set({ statsLoading: true, error: null })
             try {
-                const d = date ?? getLocalDateString()
-                const res = await apiFetch(`/api/stats?date=${d}`, { headers: authHeaders() })
+                const params = new URLSearchParams()
+                if (startDate) params.set("startDate", startDate)
+                if (endDate) params.set("endDate", endDate)
+                const qs = params.toString()
+                const res = await apiFetch(`/api/stats${qs ? `?${qs}` : ""}`, { headers: authHeaders() })
                 const data = await res.json()
                 if (!res.ok) {
                     set({ error: data?.message || "Failed to fetch stats", statsLoading: false })

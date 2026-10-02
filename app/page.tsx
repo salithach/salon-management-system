@@ -56,9 +56,9 @@ const features = [
   },
   {
     icon: BarChart3,
-    title: "Revenue Reports",
+    title: "Revenue Analytics",
     desc: "Visual dashboards for daily, weekly, and monthly revenue. Break down earnings by service, staff member, or client segment.",
-    tag: "Reports",
+    tag: "Analytics",
     gradient: "from-indigo-500 to-blue-500",
     glow: "group-hover:shadow-indigo-500/25",
   },

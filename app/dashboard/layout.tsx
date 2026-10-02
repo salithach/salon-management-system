@@ -18,7 +18,7 @@ const navItems = [
     { label: "Services",     href: "/dashboard/services",     icon: Scissors },
     { label: "Staff",        href: "/dashboard/staff",        icon: UserCheck },
     { label: "Inventory",    href: "/dashboard/inventory",    icon: Package },
-    { label: "Reports",      href: "/dashboard/reports",      icon: BarChart3 },
+    { label: "Analytics",      href: "/dashboard/analytics",      icon: BarChart3 },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -28,7 +28,7 @@ const pageTitles: Record<string, string> = {
     "/dashboard/services": "Services",
     "/dashboard/staff": "Staff",
     "/dashboard/inventory": "Inventory",
-    "/dashboard/reports": "Reports",
+    "/dashboard/analytics": "Analytics",
     "/dashboard/profile": "My Profile",
 }
 

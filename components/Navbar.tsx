@@ -36,7 +36,7 @@ export default function Navbar() {
         { href: "/dashboard/clients", label: "Clients", icon: Users },
         { href: "/dashboard/services", label: "Services", icon: Scissors },
         { href: "/dashboard/staff", label: "Staff", icon: UserCheck },
-        { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+        { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
     ]
 
     return (

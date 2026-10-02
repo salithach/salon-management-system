@@ -10,7 +10,7 @@ export default function ContactPage() {
         { text: "Everything In One Place", icon: "🏠" },
         { text: "Secure & Reliable", icon: "🔐" },
         { text: "Effortless Scheduling", icon: "📅" },
-        { text: "Powerful Reports", icon: "📊" },
+        { text: "Powerful Analytics", icon: "📊" },
         { text: "Manage Team Effectively", icon: "👥" },
         { text: "Simplified Tracking", icon: "📈" },
         { text: "Smart Inventory Management", icon: "📦" },
