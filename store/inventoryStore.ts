@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { apiFetch } from "@/lib/apiFetch"
+import { wait } from "@/lib/wait"
 import { useAuthStore } from "@/store/authStore"
 
 export type InventoryItem = {
@@ -23,13 +24,6 @@ export type InventorySale = {
 const authHeaders = (): Record<string, string> => {
     const token = useAuthStore.getState().token
     return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
-    const elapsed = Date.now() - start
-    return new Promise<void>(
-        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
-    )
 }
 
 type InventoryState = {

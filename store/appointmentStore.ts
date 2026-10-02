@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { apiFetch } from "@/lib/apiFetch"
+import { wait } from "@/lib/wait"
 import { useAuthStore } from "@/store/authStore"
 
 export type AppointmentStatus = "CONFIRMED" | "PENDING" | "CANCELLED"
@@ -29,13 +30,6 @@ const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-/** Ensures the loading state is visible for at least MIN_MS milliseconds — same pattern as staffStore */
-const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
-    const elapsed = Date.now() - start
-    return new Promise<void>(
-        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
-    )
-}
 /** Normalise whatever the API returns ("confirmed", "Confirmed", "CONFIRMED") → "CONFIRMED" */
 function normalizeStatus(raw: string): AppointmentStatus {
     switch (raw?.toUpperCase()) {
