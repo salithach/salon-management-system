@@ -307,7 +307,7 @@ export default function ReportsPage() {
     return (
         <>
             {statsLoading && (
-                <LoadingOverlay message="Preparing reports…" />
+                <LoadingOverlay message="Loading analytics…" />
             )}
 
             <div className="flex items-center justify-between mb-2">

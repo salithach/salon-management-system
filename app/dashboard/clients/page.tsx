@@ -265,7 +265,7 @@ export default function ClientsPage() {
 
     return (
         <>
-            {isGlobalLoading && <LoadingOverlay message="Loading official clients list…" />}
+            {isGlobalLoading && <LoadingOverlay message="Loading clients…" />}
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

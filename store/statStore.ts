@@ -9,6 +9,13 @@ const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+const wait = (start: number = Date.now(), MIN_MS: number = 800): Promise<void> => {
+    const elapsed = Date.now() - start
+    return new Promise<void>(
+        (r) => setTimeout(r, Math.max(0, MIN_MS - elapsed))
+    )
+}
+
 export type ReportsOverview = {
     monthlyRevenue: number
     monthlyRevenueChangePercent: number
@@ -108,11 +115,14 @@ export const useStatStore =
                 const res = await apiFetch(`/api/stats${qs ? `?${qs}` : ""}`, { headers: authHeaders() })
                 const data = await res.json()
                 if (!res.ok) {
+                    await wait()
                     set({ error: data?.message || "Failed to fetch stats", statsLoading: false })
                     return
                 }
+                await wait()
                 set({ stats: data?.data, statsLoading: false })
             } catch (err) {
+                await wait()
                 set({ error: (err as Error).message, statsLoading: false })
             }
         },
